@@ -51,43 +51,46 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# ---- PREDICTION ----
-fuel_Diesel = 1 if fuel_type == 'Diesel' else 0
-fuel_LPG = 1 if fuel_type == 'LPG' else 0
-fuel_Petrol = 1 if fuel_type == 'Petrol' else 0
+# ---- PREDICTION WITH ERROR HANDLING ----
+try:
+    fuel_Diesel = 1 if fuel_type == 'Diesel' else 0
+    fuel_LPG = 1 if fuel_type == 'LPG' else 0
+    fuel_Petrol = 1 if fuel_type == 'Petrol' else 0
 
-seller_type_Individual = 1 if seller_type == 'Individual' else 0
-seller_type_Trustmark_Dealer = 1 if seller_type == 'Trustmark Dealer' else 0
+    seller_type_Individual = 1 if seller_type == 'Individual' else 0
+    seller_type_Trustmark_Dealer = 1 if seller_type == 'Trustmark Dealer' else 0
 
-transmission_Manual = 1 if transmission == 'Manual' else 0
+    transmission_Manual = 1 if transmission == 'Manual' else 0
 
-owner_Second_Owner = 1 if owner_type == 'Second Owner' else 0
-owner_Third_Owner = 1 if owner_type == 'Third Owner' else 0
-owner_Fourth_Above = 1 if owner_type == 'Fourth & Above Owner' else 0
-owner_Test_Drive = 1 if owner_type == 'Test Drive Car' else 0
+    owner_Second_Owner = 1 if owner_type == 'Second Owner' else 0
+    owner_Third_Owner = 1 if owner_type == 'Third Owner' else 0
+    owner_Fourth_Above = 1 if owner_type == 'Fourth & Above Owner' else 0
+    owner_Test_Drive = 1 if owner_type == 'Test Drive Car' else 0
 
-input_data = pd.DataFrame({
-    'car_age': [car_age],
-    'km_driven': [km_driven],
-    'seats': [seats],
-    'max_power (in bph)': [max_power],
-    'Mileage': [mileage],
-    'Engine (CC)': [engine_cc],
-    'fuel_Diesel': [fuel_Diesel],
-    'fuel_LPG': [fuel_LPG],
-    'fuel_Petrol': [fuel_Petrol],
-    'seller_type_Individual': [seller_type_Individual],
-    'seller_type_Trustmark Dealer': [seller_type_Trustmark_Dealer],
-    'transmission_Manual': [transmission_Manual],
-    'owner_Second Owner': [owner_Second_Owner],
-    'owner_Third Owner': [owner_Third_Owner],
-    'owner_Fourth & Above Owner': [owner_Fourth_Above],
-    'owner_Test Drive Car': [owner_Test_Drive]
-})
+    input_data = pd.DataFrame({
+        'car_age': [car_age],
+        'km_driven': [km_driven],
+        'seats': [seats],
+        'max_power (in bph)': [max_power],
+        'Mileage': [mileage],
+        'Engine (CC)': [engine_cc],
+        'fuel_Diesel': [fuel_Diesel],
+        'fuel_LPG': [fuel_LPG],
+        'fuel_Petrol': [fuel_Petrol],
+        'seller_type_Individual': [seller_type_Individual],
+        'seller_type_Trustmark_Dealer': [seller_type_Trustmark_Dealer],
+        'transmission_Manual': [transmission_Manual],
+        'owner_Second Owner': [owner_Second_Owner],
+        'owner_Third Owner': [owner_Third_Owner],
+        'owner_Fourth & Above Owner': [owner_Fourth_Above],
+        'owner_Test Drive Car': [owner_Test_Drive]
+    })
 
-# Prediction
-prediction = model.predict(input_data)
-st.subheader(f"The predicted price of the car is: ₹{int(prediction[0]):,}")
+    # Prediction
+    prediction = model.predict(input_data)
+    st.subheader(f"The predicted price of the car is: ₹{int(prediction[0]):,}")
+except ValueError as e:
+    st.error(f"An error occurred during prediction: {str(e)}")
 
 # ---- MODEL EVALUATION ----
 # Making predictions on the test set
