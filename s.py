@@ -176,6 +176,54 @@ def display_visualizations(df, selected_year):
                                      color_discrete_sequence=px.colors.sequential.Teal)
     st.plotly_chart(fig_engine_vs_price, use_container_width=True)
 
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+def train_model(df):
+    """
+    Train the Random Forest Regressor model on the preprocessed dataset.
+    
+    Args:
+        df (pd.DataFrame): The preprocessed data frame.
+    
+    Returns:
+        model (RandomForestRegressor): The trained Random Forest model.
+        X_train (pd.DataFrame): Training features.
+        X_test (pd.DataFrame): Test features.
+        y_train (pd.Series): Training target values.
+        y_test (pd.Series): Test target values.
+    """
+    X = df.drop(columns=['selling_price', 'name'], errors='ignore')
+    y = df['selling_price']
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    
+    return model, X_train, X_test, y_train, y_test
+
+def display_prediction_metrics(model, X_test, y_test):
+    """
+    Display the R² score, Mean Absolute Error (MAE), and Mean Squared Error (MSE) of the model on the test set.
+
+    Args:
+        model (RandomForestRegressor): The trained model.
+        X_test (pd.DataFrame): Test features.
+        y_test (pd.Series): True test target values.
+    """
+    # Predict on the test set
+    y_pred = model.predict(X_test)
+    
+    # Calculate metrics
+    r2 = r2_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    
+    # Display the metrics
+    st.subheader("Model Performance Metrics on Test Data")
+    st.write(f"**R² Score**: {r2:.2f}")
+    st.write(f"**Mean Absolute Error (MAE)**: {mae:,.2f}")
+    st.write(f"**Mean Squared Error (MSE)**: {mse:,.2f}")
 
 # ---- MAIN APP ----
 df = load_data()
@@ -193,10 +241,10 @@ if df is not None:
     transmission = st.sidebar.selectbox("Transmission", ['Manual', 'Automatic'])
     owner_type = st.sidebar.selectbox("Owner Type", ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'])
 
-    # ---- Sidebar Filter for Data Visualization ----
+    # Sidebar Filter for Data Visualization
     st.sidebar.markdown("## Filter Data for Visualizations")
     year_filter = st.sidebar.selectbox("Select Year", options=["All"] + list(range(2000, 2025)), index=0)
-    
+
     # Train the model
     model, X_train, X_test, y_train, y_test = train_model(df)
 
@@ -206,9 +254,11 @@ if df is not None:
     # Display prediction
     display_prediction(model, input_data, X_train)
 
+    # Show R², MAE, and MSE metrics
+    display_prediction_metrics(model, X_test, y_test)
+
     # Show visualizations based on the selected year
     display_visualizations(df, year_filter)
 
 else:
     st.warning("Please upload a dataset to use the application.")
-
