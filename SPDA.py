@@ -5,9 +5,10 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-st.set_page_config(page_title="Car Price Prediction Dashboard", page_icon=":car:", layout="wide")
+# ---- PAGE CONFIGURATION ----
+st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
 
-# ---- LOAD DATA ----
+# ---- LOAD DATA FUNCTION ----
 def load_data():
     uploaded_file = st.sidebar.file_uploader("Upload A Dataset (.xlsx)", type=["xlsx"])
     if uploaded_file:
@@ -15,12 +16,12 @@ def load_data():
             df = pd.read_excel(uploaded_file)
             
             # Data Preprocessing
-            df.drop(columns=["Unnamed: 0", "Mileage Unit"], inplace=True, errors='ignore')
-            df['Mileage'].fillna(df['Mileage'].mean(), inplace=True)
+            df.drop(columns=["Unnamed: 0", "Mileage Unit"], inplace=True, errors='ignore')  # Drop unnecessary columns
+            df['Mileage'].fillna(df['Mileage'].mean(), inplace=True)  # Fill missing values with mean
             df['Engine (CC)'].fillna(df['Engine (CC)'].mean(), inplace=True)
-            df['car_age'] = 2024 - df['year']
-            df.drop(columns=['year'], inplace=True, errors='ignore')
-            df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
+            df['car_age'] = 2024 - df['year']  # Convert 'year' to 'car_age'
+            df.drop(columns=['year'], inplace=True, errors='ignore')  # Drop 'year' after conversion
+            df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)  # One-hot encoding
             return df
         except Exception as e:
             st.error(f"Error loading data: {e}")
@@ -29,7 +30,7 @@ def load_data():
         st.warning("Please upload an Excel file to proceed.")
         return None
 
-# Load the data
+# ---- LOAD THE DATA ----
 df = load_data()
 
 if df is not None:
@@ -109,15 +110,56 @@ if df is not None:
     st.markdown("### Model Performance Metrics")
     st.write(f"*R-squared (R²) Score:* {r2:.2f}")
     st.write(f"*Mean Absolute Error (MAE):* ₹{mae:,.0f}")
-else:
-    st.stop()
 
-# ---- HIDE STREAMLIT STYLE ----
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+    # ---- SIDEBAR FILTERS FOR VISUALIZATION ----
+    st.sidebar.header("Please Filter Here:")
+
+    car_brands = st.sidebar.multiselect("Select Car Brand:", options=df["name"].unique(), default=df["name"].unique())
+    fuel = st.sidebar.multiselect("Select Fuel Type:", options=df["fuel"].unique(), default=df["fuel"].unique())
+    seller_type = st.sidebar.multiselect("Select Seller Type:", options=df["seller_type"].unique(), default=df["seller_type"].unique())
+
+    # Filter DataFrame
+    df_selection = df.query("name == @car_brands & fuel == @fuel & seller_type == @seller_type")
+
+    # ---- VISUALIZATION SECTION ----
+    st.title(":car: Car Price Analysis Dashboard")
+
+    # 1. Pie Chart for Seller Type Distribution
+    st.markdown("### Seller Type Distribution")
+    seller_type_distribution = df_selection["seller_type"].value_counts()
+    fig_pie_seller_type = px.pie(values=seller_type_distribution.values, names=seller_type_distribution.index,
+                                 title="<b>Distribution by Seller Type</b>",
+                                 color_discrete_sequence=px.colors.sequential.RdBu)
+    st.plotly_chart(fig_pie_seller_type, use_container_width=True)
+
+    # 2. Pie Chart for Fuel Type Distribution
+    st.markdown("### Fuel Type Distribution")
+    fuel_distribution = df_selection["fuel"].value_counts()
+    fig_pie_fuel_type = px.pie(values=fuel_distribution.values, names=fuel_distribution.index,
+                               title="<b>Distribution by Fuel Type</b>",
+                               color_discrete_sequence=px.colors.sequential.Blues)
+    st.plotly_chart(fig_pie_fuel_type, use_container_width=True)
+
+    # 3. Box Plot for Selling Price by Fuel Type
+    st.markdown("### Box Plot of Selling Price by Fuel Type")
+    fig_box_fuel_price = px.box(df_selection, x="fuel", y="selling_price", color="fuel",
+                                title="<b>Selling Price Distribution by Fuel Type</b>",
+                                labels={"fuel": "Fuel Type", "selling_price": "Selling Price (₹)"},
+                                template="plotly_white")
+    st.plotly_chart(fig_box_fuel_price, use_container_width=True)
+
+    # 4. Box Plot for Selling Price by Car Brand
+    st.markdown("### Box Plot of Selling Price by Car Brand")
+    fig_box_brand_price = px.box(df_selection, x="name", y="selling_price", color="name",
+                                 title="<b>Selling Price Distribution by Car Brand</b>",
+                                 labels={"name": "Car Brand", "selling_price": "Selling Price (₹)"},
+                                 template="plotly_white")
+    st.plotly_chart(fig_box_brand_price, use_container_width=True)
+
+    # 5. Scatter Plot for Engine Size vs. Selling Price
+    st.markdown("### Scatter Plot: Engine Size vs. Selling Price")
+    fig_engine_vs_price = px.scatter(df_selection, x="Engine (CC)", y="selling_price", color="fuel",
+                                     title="<b>Engine Size vs. Selling Price</b>",
+                                     labels={"Engine (CC)": "Engine Size (CC)", "selling_price": "Selling Price (₹)"},
+                                     template="plotly_white")
+    st.plotly_chart(fig_engine_vs_price, use_container_width=True)
