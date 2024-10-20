@@ -17,6 +17,10 @@ def load_data():
             
             # Data Preprocessing
             df.drop(columns=["Unnamed: 0"], inplace=True, errors='ignore')  # Drop unnecessary columns
+            
+            # Clean any columns that may contain units
+            df['Mileage'] = df['Mileage'].str.replace('kmpl', '').astype(float)  # Remove 'kmpl' and convert to float
+            df['Engine (CC)'] = df['Engine (CC)'].astype(float)  # Ensure 'Engine (CC)' is float
             df['Mileage'].fillna(df['Mileage'].mean(), inplace=True)  # Fill missing values with mean
             df['Engine (CC)'].fillna(df['Engine (CC)'].mean(), inplace=True)
             df['car_age'] = 2024 - df['year']  # Convert 'year' to 'car_age'
