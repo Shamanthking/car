@@ -16,10 +16,9 @@ def load_data():
             df = pd.read_excel(uploaded_file)
             
             # Data Preprocessing
-            df.drop(columns=["Unnamed: 0"], inplace=True, errors='ignore')  # Drop unnecessary columns
+            df.drop(columns=["Unnamed: 0", "Mileage Unit"], inplace=True, errors='ignore')  # Drop unnecessary columns
             
-            # Clean any columns that may contain units
-            df['Mileage'] = df['Mileage'].str.replace('kmpl', '').astype(float)  # Remove 'kmpl' and convert to float
+            # Clean data
             df['Engine (CC)'] = df['Engine (CC)'].astype(float)  # Ensure 'Engine (CC)' is float
             df['Mileage'].fillna(df['Mileage'].mean(), inplace=True)  # Fill missing values with mean
             df['Engine (CC)'].fillna(df['Engine (CC)'].mean(), inplace=True)
@@ -66,7 +65,7 @@ if df is not None:
             'car_age': [car_age],
             'km_driven': [km_driven],
             'seats': [seats],
-            'max_power': [max_power],
+            'max_power (in bph)': [max_power],
             'Mileage': [mileage],
             'Engine (CC)': [engine_cc],
             'fuel_Diesel': [1 if fuel_type == 'Diesel' else 0],
@@ -89,7 +88,7 @@ if df is not None:
         input_data = input_data[X_train.columns]  # Align column order
 
         prediction = model.predict(input_data)
-        st.write(f"Predicted Selling Price: {prediction[0]:,.2f}")
+        st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
     
     except Exception as e:
         st.error(f"Error in prediction: {e}")
