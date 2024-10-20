@@ -25,7 +25,7 @@ markdown-it-py==3.0.0
 markupsafe==3.0.2
 mdurl==0.1.2
 narwhals==1.9.4
-packaging==24.1
+packaging==23
 protobuf==5
 pyarrow==17.0.0
 pydeck==0.9.1
