@@ -57,21 +57,37 @@ if df is not None:
 
     # ---- PREDICTION ----
     try:
-        fuel_Diesel = 1 if fuel_type == 'Diesel' else 0
-        fuel_LPG = 1 if fuel_type == 'LPG' else 0
-        fuel_Petrol = 1 if fuel_type == 'Petrol' else 0
-        seller_type_Individual = 1 if seller_type == 'Individual' else 0
-        seller_type_Trustmark_Dealer = 1 if seller_type == 'Trustmark Dealer' else 0
-        transmission_Manual = 1 if transmission == 'Manual' else 0
-        owner_Second_Owner = 1 if owner_type == 'Second Owner' else 0
-        owner_Third_Owner = 1 if owner_type == 'Third Owner' else 0
-        owner_Fourth_Above = 1 if owner_type == 'Fourth & Above Owner' else 0
-        owner_Test_Drive = 1 if owner_type == 'Test Drive Car' else 0
+        # Create the input data structure matching the encoded columns
         input_data = pd.DataFrame({
             'car_age': [car_age],
             'km_driven': [km_driven],
             'seats': [seats],
-            'max_power (in bph)': [max_power],
+            'max_power': [max_power],
             'Mileage': [mileage],
             'Engine (CC)': [engine_cc],
-            'fuel_Diesel': [fuel_D
+            'fuel_Diesel': [1 if fuel_type == 'Diesel' else 0],
+            'fuel_LPG': [1 if fuel_type == 'LPG' else 0],
+            'fuel_Petrol': [1 if fuel_type == 'Petrol' else 0],
+            'seller_type_Individual': [1 if seller_type == 'Individual' else 0],
+            'seller_type_Trustmark Dealer': [1 if seller_type == 'Trustmark Dealer' else 0],
+            'transmission_Manual': [1 if transmission == 'Manual' else 0],
+            'owner_Second Owner': [1 if owner_type == 'Second Owner' else 0],
+            'owner_Third Owner': [1 if owner_type == 'Third Owner' else 0],
+            'owner_Fourth & Above Owner': [1 if owner_type == 'Fourth & Above Owner' else 0],
+            'owner_Test Drive Car': [1 if owner_type == 'Test Drive Car' else 0]
+        })
+
+        # Ensure input_data has the same columns as the trained model
+        missing_cols = set(X_train.columns) - set(input_data.columns)
+        for col in missing_cols:
+            input_data[col] = 0
+        
+        input_data = input_data[X_train.columns]  # Align column order
+
+        prediction = model.predict(input_data)
+        st.write(f"Predicted Selling Price: {prediction[0]:,.2f}")
+    
+    except Exception as e:
+        st.error(f"Error in prediction: {e}")
+else:
+    st.warning("Please upload a dataset to use the application.")
