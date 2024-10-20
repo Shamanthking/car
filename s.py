@@ -89,5 +89,50 @@ if df is not None:
     
     except Exception as e:
         st.error(f"Error in prediction: {e}")
+
+    # ---- DATA VISUALIZATIONS ----
+    st.header("Car Price Data Analysis")
+
+    # 1. Pie Chart for Seller Type Distribution
+    st.subheader("Seller Type Distribution")
+    seller_type_distribution = df['seller_type'].value_counts()
+    fig_pie_seller_type = px.pie(values=seller_type_distribution.values, names=seller_type_distribution.index,
+                                 title="<b>Distribution by Seller Type</b>",
+                                 color_discrete_sequence=px.colors.sequential.RdBu)
+    st.plotly_chart(fig_pie_seller_type, use_container_width=True)
+
+    # 2. Pie Chart for Fuel Type Distribution
+    st.subheader("Fuel Type Distribution")
+    fuel_distribution = df['fuel'].value_counts()
+    fig_pie_fuel_type = px.pie(values=fuel_distribution.values, names=fuel_distribution.index,
+                               title="<b>Distribution by Fuel Type</b>",
+                               color_discrete_sequence=px.colors.sequential.Blues)
+    st.plotly_chart(fig_pie_fuel_type, use_container_width=True)
+
+    # 3. Box Plot for Selling Price by Fuel Type
+    st.subheader("Selling Price by Fuel Type")
+    fig_box_fuel_price = px.box(df, x="fuel", y="selling_price", color="fuel",
+                                title="<b>Selling Price Distribution by Fuel Type</b>",
+                                labels={"fuel": "Fuel Type", "selling_price": "Selling Price (₹)"},
+                                template="plotly_white")
+    st.plotly_chart(fig_box_fuel_price, use_container_width=True)
+
+    # 4. Scatter Plot for Engine Size vs. Selling Price
+    st.subheader("Engine Size vs. Selling Price")
+    fig_engine_vs_price = px.scatter(df, x="Engine (CC)", y="selling_price", color="fuel",
+                                     title="<b>Engine Size vs. Selling Price</b>",
+                                     labels={"Engine (CC)": "Engine Size (CC)", "selling_price": "Selling Price (₹)"},
+                                     template="plotly_white")
+    st.plotly_chart(fig_engine_vs_price, use_container_width=True)
+
+    # 5. Bar Chart for Average Selling Price by Owner Type
+    st.subheader("Average Selling Price by Owner Type")
+    price_by_owner = df.groupby("owner")[["selling_price"]].mean().reset_index()
+    fig_avg_price_owner = px.bar(price_by_owner, x="owner", y="selling_price", color="owner",
+                                 title="<b>Average Selling Price by Owner Type</b>",
+                                 labels={"owner": "Owner Type", "selling_price": "Selling Price (₹)"},
+                                 template="plotly_white")
+    st.plotly_chart(fig_avg_price_owner, use_container_width=True)
+
 else:
     st.warning("Please upload a dataset to use the application.")
