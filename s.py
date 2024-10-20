@@ -16,12 +16,12 @@ def load_data():
             df = pd.read_excel(uploaded_file)
             
             # Data Preprocessing
-            df.drop(columns=["Unnamed: 0", "Mileage Unit"], inplace=True, errors='ignore') # Drop unnecessary columns
-            df['Mileage'].fillna(df['Mileage'].mean(), inplace=True) # Fill missing values with mean
+            df.drop(columns=["Unnamed: 0"], inplace=True, errors='ignore')  # Drop unnecessary columns
+            df['Mileage'].fillna(df['Mileage'].mean(), inplace=True)  # Fill missing values with mean
             df['Engine (CC)'].fillna(df['Engine (CC)'].mean(), inplace=True)
-            df['car_age'] = 2024 - df['year'] # Convert 'year' to 'car_age'
-            df.drop(columns=['year'], inplace=True, errors='ignore') # Drop 'year' after conversion
-            df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True) # One-hot encoding
+            df['car_age'] = 2024 - df['year']  # Convert 'year' to 'car_age'
+            df.drop(columns=['year'], inplace=True, errors='ignore')  # Drop 'year' after conversion
+            df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)  # One-hot encoding
             
             return df
         except Exception as e:
@@ -89,62 +89,45 @@ if df is not None:
     
     except Exception as e:
         st.error(f"Error in prediction: {e}")
-
-   # ---- DATA VISUALIZATIONS ----
-st.header("Car Price Data Analysis")
-
-# 1. Pie Chart for Seller Type Distribution (Only if 'seller_type' exists)
-if 'seller_type' in df.columns:
-    st.subheader("Seller Type Distribution")
-    seller_type_distribution = df['seller_type'].value_counts()
-    fig_pie_seller_type = px.pie(values=seller_type_distribution.values, names=seller_type_distribution.index,
+    
+    # ---- DATA VISUALIZATION ----
+    st.title(":bar_chart: Car Price Data Visualization")
+    
+    # 1. Pie Chart for Seller Type Distribution
+    st.markdown("### Seller Type Distribution")
+    seller_type_distribution = df['seller_type_Individual'].value_counts()
+    fig_pie_seller_type = px.pie(values=seller_type_distribution.values, 
+                                 names=seller_type_distribution.index,
                                  title="<b>Distribution by Seller Type</b>",
                                  color_discrete_sequence=px.colors.sequential.RdBu)
     st.plotly_chart(fig_pie_seller_type, use_container_width=True)
-else:
-    st.warning("'seller_type' column not found in the dataset.")
 
-# 2. Pie Chart for Fuel Type Distribution (Only if 'fuel' exists)
-if 'fuel' in df.columns:
-    st.subheader("Fuel Type Distribution")
-    fuel_distribution = df['fuel'].value_counts()
-    fig_pie_fuel_type = px.pie(values=fuel_distribution.values, names=fuel_distribution.index,
+    # 2. Pie Chart for Fuel Type Distribution
+    st.markdown("### Fuel Type Distribution")
+    fuel_distribution = df[['fuel_Diesel', 'fuel_Petrol', 'fuel_LPG']].sum()
+    fig_pie_fuel_type = px.pie(values=fuel_distribution.values, 
+                               names=fuel_distribution.index,
                                title="<b>Distribution by Fuel Type</b>",
                                color_discrete_sequence=px.colors.sequential.Blues)
     st.plotly_chart(fig_pie_fuel_type, use_container_width=True)
-else:
-    st.warning("'fuel' column not found in the dataset.")
 
-# 3. Box Plot for Selling Price by Fuel Type (Only if 'fuel' and 'selling_price' exist)
-if 'fuel' in df.columns and 'selling_price' in df.columns:
-    st.subheader("Selling Price by Fuel Type")
+    # 3. Box Plot for Selling Price by Fuel Type
+    st.markdown("### Box Plot of Selling Price by Fuel Type")
+    fuel_types = ['fuel_Diesel', 'fuel_Petrol', 'fuel_LPG']
+    df['fuel'] = df[fuel_types].idxmax(axis=1)
     fig_box_fuel_price = px.box(df, x="fuel", y="selling_price", color="fuel",
                                 title="<b>Selling Price Distribution by Fuel Type</b>",
                                 labels={"fuel": "Fuel Type", "selling_price": "Selling Price (₹)"},
                                 template="plotly_white")
     st.plotly_chart(fig_box_fuel_price, use_container_width=True)
-else:
-    st.warning("'fuel' or 'selling_price' column not found in the dataset.")
 
-# 4. Scatter Plot for Engine Size vs. Selling Price (Only if 'Engine (CC)' and 'selling_price' exist)
-if 'Engine (CC)' in df.columns and 'selling_price' in df.columns:
-    st.subheader("Engine Size vs. Selling Price")
+    # 4. Scatter Plot for Engine Size vs. Selling Price
+    st.markdown("### Scatter Plot: Engine Size vs. Selling Price")
     fig_engine_vs_price = px.scatter(df, x="Engine (CC)", y="selling_price", color="fuel",
                                      title="<b>Engine Size vs. Selling Price</b>",
                                      labels={"Engine (CC)": "Engine Size (CC)", "selling_price": "Selling Price (₹)"},
                                      template="plotly_white")
     st.plotly_chart(fig_engine_vs_price, use_container_width=True)
-else:
-    st.warning("'Engine (CC)' or 'selling_price' column not found in the dataset.")
 
-# 5. Bar Chart for Average Selling Price by Owner Type (Only if 'owner' and 'selling_price' exist)
-if 'owner' in df.columns and 'selling_price' in df.columns:
-    st.subheader("Average Selling Price by Owner Type")
-    price_by_owner = df.groupby("owner")[["selling_price"]].mean().reset_index()
-    fig_avg_price_owner = px.bar(price_by_owner, x="owner", y="selling_price", color="owner",
-                                 title="<b>Average Selling Price by Owner Type</b>",
-                                 labels={"owner": "Owner Type", "selling_price": "Selling Price (₹)"},
-                                 template="plotly_white")
-    st.plotly_chart(fig_avg_price_owner, use_container_width=True)
 else:
-    st.warning("'owner' or 'selling_price' column not found in the dataset.")
+    st.warning("Please upload a dataset to use the application.")
