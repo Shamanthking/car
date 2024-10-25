@@ -55,7 +55,7 @@ def main():
 
 # ---- HOME PAGE ----
 def show_home():
-    set_background("https://your_image_url.com/background.jpg")  # Replace with the URL to your background image
+    set_background("https://c4.wallpaperflare.com/wallpaper/788/784/913/bugatti-chiron-dream-car-black-wallpaper-preview.jpg")  # Replace with the URL to your background image
     st.title("Car Price Prediction & Analysis")
     st.subheader("Get accurate predictions on car prices and explore data insights.")
     
