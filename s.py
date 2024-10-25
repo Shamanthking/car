@@ -9,13 +9,14 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
 
 # ---- LOAD DATA ----
-@st.cache_data
+@st.cache
 def load_data():
-    df = pd.read_csv('full data.csv', error_bad_lines=False, warn_bad_lines=True)
-    df['car_age'] = 2024 - df['year']  # Calculate car age based on the year
+    df = pd.read_csv('full data.csv', on_bad_lines='skip')  # Skips rows with bad lines
+    df['car_age'] = 2024 - df['year']
     df.drop(columns=['year'], inplace=True, errors='ignore')
-    df = pd.get_dummies(df, columns=['brand', 'fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
+    df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
     return df
+
 
 # ---- MAIN PAGE NAVIGATION ----
 def main():
