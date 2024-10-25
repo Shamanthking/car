@@ -28,7 +28,7 @@ def set_background(image_path):
     )
 
 # Load custom CSS file if necessary
-#local_css("style.css")  # Uncomment if you have a local CSS file
+# local_css("style.css")  # Uncomment if you have a local CSS file
 
 # ---- LOAD DATA ----
 @st.cache
@@ -42,12 +42,10 @@ def load_data():
 # ---- MAIN PAGE NAVIGATION ----
 def main():
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Predict", "Analysis", "Contact"])
+    page = st.sidebar.radio("Go to", ["Home", "Analysis", "Contact"])
     
     if page == "Home":
         show_home()
-    elif page == "Predict":
-        show_predict()
     elif page == "Analysis":
         show_analysis()
     elif page == "Contact":
@@ -188,7 +186,10 @@ def display_visualizations(df):
     
     # Heatmap of Feature Correlations
     corr_matrix = df.corr()
-    fig_corr = px.imshow(corr_matrix, text_auto=True, title="Feature Correlation Heatmap", color_continuous_scale="RdBu")
+    fig_corr = px.imshow(corr_matrix, 
+                         text_auto=True, 
+                         title="Feature Correlation Heatmap", 
+                         color_continuous_scale="RdBu")
     st.plotly_chart(fig_corr, use_container_width=True)
 
 
