@@ -11,11 +11,12 @@ st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_
 # ---- LOAD DATA ----
 @st.cache
 def load_data():
-    df = pd.read_csv('full data.csv', on_bad_lines='skip')  # Skips rows with bad lines
+    df = pd.read_csv('/full/path/to/full data.csv', on_bad_lines='skip')
     df['car_age'] = 2024 - df['year']
     df.drop(columns=['year'], inplace=True, errors='ignore')
     df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
     return df
+
 
 
 # ---- MAIN PAGE NAVIGATION ----
