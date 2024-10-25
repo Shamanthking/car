@@ -90,9 +90,9 @@ def show_analysis():
 def show_contact():
     st.title("Contact Us")
     st.markdown("""
-        - LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/your-profile)
-        - Instagram: [Your Instagram Profile](https://www.instagram.com/your-profile)
-        - Email: [youremail@example.com](mailto:youremail@example.com)
+        - [🔗 LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app) 
+        - [📸 Instagram](https://www.instagram.com/shamanth_m_/profilecard/?igsh=ZXdpbnppbjl1M3li) 
+        - [✉️ Email](mailto:shamanth2626@gmail.com)
     """)
 
 # ---- HELPER FUNCTIONS ----
