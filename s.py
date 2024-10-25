@@ -8,6 +8,28 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
 
+# ---- CSS STYLING ----
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# Apply custom CSS for background image
+def set_background(image_path):
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background: url({image_path});
+            background-size: cover;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Load custom CSS file if necessary
+#local_css("style.css")  # Uncomment if you have a local CSS file
+
 # ---- LOAD DATA ----
 @st.cache
 def load_data():
@@ -16,9 +38,7 @@ def load_data():
     df.drop(columns=['year'], inplace=True, errors='ignore')
     df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
     return df
-
-
-
+    
 # ---- MAIN PAGE NAVIGATION ----
 def main():
     st.sidebar.title("Navigation")
@@ -35,10 +55,14 @@ def main():
 
 # ---- HOME PAGE ----
 def show_home():
+    set_background("https://your_image_url.com/background.jpg")  # Replace with the URL to your background image
     st.title("Car Price Prediction & Analysis")
     st.subheader("Get accurate predictions on car prices and explore data insights.")
+    
+    # Navigation button to the Predict page
     if st.button("Get Car Price Prediction"):
         st.experimental_set_query_params(page="Predict")
+        show_predict()
 
 # ---- PREDICT PAGE ----
 def show_predict():
