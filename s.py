@@ -34,8 +34,8 @@ def set_background(image_path):
 @st.cache
 def load_data():
     df = pd.read_csv('data/full data.csv', on_bad_lines='skip')
-    df['car_age'] = 2024 - df['year']
-    df.drop(columns=['year'], inplace=True, errors='ignore')
+    df['car_age'] = 2024 - df['Year']
+    df.drop(columns=['Year'], inplace=True, errors='ignore')
     df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
     return df
     
