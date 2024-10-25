@@ -27,18 +27,16 @@ def set_background(image_path):
         unsafe_allow_html=True
     )
 
-# Load custom CSS file if necessary
-# local_css("style.css")  # Uncomment if you have a local CSS file
-
 # ---- LOAD DATA ----
-@st.cache
+@st.cache_data
 def load_data():
     df = pd.read_csv('data/full data.csv', on_bad_lines='skip')
-    df['car_age'] = 2024 - df['Year']
+    df['car_age'] = 2024 - df['Year']  # Use the correct column name 'Year'
     df.drop(columns=['Year'], inplace=True, errors='ignore')
-    df = pd.get_dummies(df, columns=['fuel', 'seller_type', 'transmission', 'owner'], drop_first=True)
+    # Convert categorical columns to dummy variables
+    df = pd.get_dummies(df, columns=['Fuel_Type', 'Transmission', 'Owner_Type'], drop_first=True)
     return df
-    
+
 # ---- MAIN PAGE NAVIGATION ----
 def main():
     st.sidebar.title("Navigation")
@@ -76,7 +74,7 @@ def show_predict():
     max_power = st.number_input("Max Power (in bph)", 50, 500, 100)
     mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
     engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-    brand = st.selectbox("Brand", df['brand'].unique())
+    brand = st.selectbox("Brand", df['Name'].unique())  # Update this based on the dataset
     fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
     seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
     transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
@@ -92,15 +90,15 @@ def show_analysis():
     df = load_data()
 
     st.sidebar.header("Filter Data for Visualization")
-    selected_brand = st.sidebar.selectbox("Select Brand", options=["All"] + list(df['brand'].unique()), index=0)
+    selected_brand = st.sidebar.selectbox("Select Brand", options=["All"] + list(df['Name'].unique()), index=0)
     selected_fuel = st.sidebar.selectbox("Select Fuel Type", options=["All", "Diesel", "Petrol", "LPG"])
     selected_seller_type = st.sidebar.selectbox("Select Seller Type", options=["All", "Individual", "Dealer", "Trustmark Dealer"])
     selected_transmission = st.sidebar.selectbox("Select Transmission", options=["All", "Manual", "Automatic"])
 
     if selected_brand != "All":
-        df = df[df['brand'] == selected_brand]
+        df = df[df['Name'] == selected_brand]
     if selected_fuel != "All":
-        df = df[df[f'fuel_{selected_fuel}'] == 1]
+        df = df[df[f'Fuel_Type_{selected_fuel}'] == 1]
     if selected_seller_type != "All":
         df = df[df[f'seller_type_{selected_seller_type}'] == 1]
     if selected_transmission != "All":
@@ -114,13 +112,13 @@ def show_contact():
     st.markdown("""
         - [🔗 LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app) 
         - [📸 Instagram](https://www.instagram.com/shamanth_m_/profilecard/?igsh=ZXdpbnppbjl1M3li) 
-        - [✉️ Email](mailto:shamanth2626@gmail.com)
+        - [✉ Email](mailto:shamanth2626@gmail.com)
     """)
 
 # ---- HELPER FUNCTIONS ----
 def train_model(df):
-    X = df.drop(columns=['selling_price', 'model'], errors='ignore')
-    y = df['selling_price']
+    X = df.drop(columns=['New_Price'], errors='ignore')  # Ensure this is the target variable
+    y = df['New_Price']  # Change target to 'New_Price'
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
@@ -132,13 +130,13 @@ def train_model(df):
 def get_prediction_input(car_age, km_driven, seats, max_power, mileage, engine_cc, brand, fuel_type, seller_type, transmission, owner_type):
     input_data = pd.DataFrame({
         'car_age': [car_age],
-        'km_driven': [km_driven],
-        'seats': [seats],
-        'max_power': [max_power],
-        'mileage': [mileage],
-        'engine': [engine_cc],
-        f'brand_{brand}': [1],
-        f'fuel_{fuel_type}': [1],
+        'Kilometers_Driven': [km_driven],
+        'Seats': [seats],
+        'Power': [max_power],
+        'Mileage': [mileage],
+        'Engine': [engine_cc],
+        f'Name_{brand}': [1],
+        f'Fuel_Type_{fuel_type}': [1],
         f'seller_type_{seller_type}': [1],
         f'transmission_{transmission}': [1],
         f'owner_{owner_type}': [1]
@@ -157,31 +155,31 @@ def display_visualizations(df):
     st.markdown("## Selling Price Distributions")
 
     # Histogram of Selling Price
-    fig_price_hist = px.histogram(df, x='selling_price', nbins=50, title="Distribution of Selling Prices", color_discrete_sequence=['#636EFA'])
+    fig_price_hist = px.histogram(df, x='New_Price', nbins=50, title="Distribution of Selling Prices", color_discrete_sequence=['#636EFA'])
     st.plotly_chart(fig_price_hist, use_container_width=True)
 
     # Box Plot of Selling Price by Brand
-    fig_price_brand = px.box(df, x="brand", y="selling_price", title="Selling Price by Brand", color="brand", template="plotly_white")
+    fig_price_brand = px.box(df, x="Name", y="New_Price", title="Selling Price by Brand", color="Name", template="plotly_white")
     st.plotly_chart(fig_price_brand, use_container_width=True)
 
     # Scatter Plot of Engine Size vs Selling Price
-    fig_engine_vs_price = px.scatter(df, x="engine", y="selling_price", color="fuel", title="Engine Size vs. Selling Price", template="plotly_white")
+    fig_engine_vs_price = px.scatter(df, x="Engine", y="New_Price", color="Fuel_Type", title="Engine Size vs. Selling Price", template="plotly_white")
     st.plotly_chart(fig_engine_vs_price, use_container_width=True)
 
     # Pie Chart of Fuel Type Distribution
-    fuel_distribution = df[['fuel_Diesel', 'fuel_Petrol', 'fuel_LPG']].sum()
+    fuel_distribution = df[['Fuel_Type_Diesel', 'Fuel_Type_Petrol', 'Fuel_Type_LPG']].sum()
     fig_fuel_type = px.pie(values=fuel_distribution.values, names=fuel_distribution.index, title="Fuel Type Distribution", color_discrete_sequence=px.colors.sequential.Teal)
     st.plotly_chart(fig_fuel_type, use_container_width=True)
 
     st.markdown("## Comparative Analysis")
 
     # Scatter Plot of Mileage vs Selling Price
-    fig_mileage_vs_price = px.scatter(df, x="mileage", y="selling_price", color="fuel", title="Mileage vs. Selling Price", template="plotly_white")
+    fig_mileage_vs_price = px.scatter(df, x="Mileage", y="New_Price", color="Fuel_Type", title="Mileage vs. Selling Price", template="plotly_white")
     st.plotly_chart(fig_mileage_vs_price, use_container_width=True)
 
     # Bar Chart of Average Selling Price by Brand
-    avg_price_brand = df.groupby('brand')['selling_price'].mean().reset_index()
-    fig_avg_price_brand = px.bar(avg_price_brand, x='brand', y='selling_price', title="Average Selling Price by Brand", color="brand")
+    avg_price_brand = df.groupby('Name')['New_Price'].mean().reset_index()
+    fig_avg_price_brand = px.bar(avg_price_brand, x='Name', y='New_Price', title="Average Selling Price by Brand", color="Name")
     st.plotly_chart(fig_avg_price_brand, use_container_width=True)
     
     # Heatmap of Feature Correlations
@@ -192,6 +190,5 @@ def display_visualizations(df):
                          color_continuous_scale="RdBu")
     st.plotly_chart(fig_corr, use_container_width=True)
 
-
-if __name__ == "__main__":
+if __name__ == "__main__":  # Fixed line for running the main function
     main()
