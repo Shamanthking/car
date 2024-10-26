@@ -25,12 +25,23 @@ def set_background(image_url):
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    df = pd.read_csv('data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
-    df['car_age'] = 2024 - df.get('Year', 2024)  # Use the correct column name 'Year' if exists
-    df.drop(columns=['Year'], inplace=True, errors='ignore')
-    # Convert categorical columns to dummy variables
-    df = pd.get_dummies(df, columns=['Fuel_Type', 'Transmission', 'Owner_Type'], drop_first=True)
+    # Load the dataset
+    df = pd.read_csv('/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+    
+    # Calculate car age if 'Year' column exists
+    if 'Year' in df.columns:
+        df['car_age'] = 2024 - df['Year']
+        df.drop(columns=['Year'], inplace=True)
+
+    # Check for the existence of each column before creating dummy variables
+    categorical_columns = ['Fuel_Type', 'Transmission', 'Owner_Type']
+    available_columns = [col for col in categorical_columns if col in df.columns]
+    
+    if available_columns:
+        df = pd.get_dummies(df, columns=available_columns, drop_first=True)
+    
     return df
+
 
 # ---- MAIN PAGE NAVIGATION ----
 def main():
