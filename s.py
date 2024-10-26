@@ -25,22 +25,33 @@ def set_background(image_url):
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    # Load the dataset
-    df = pd.read_csv('data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
-    
-    # Calculate car age if 'Year' column exists
-    if 'Year' in df.columns:
-        df['car_age'] = 2024 - df['Year']
-        df.drop(columns=['Year'], inplace=True)
+    try:
+        # Load the dataset
+        df = pd.read_csv('/mnt/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+        
+        # Confirm the data loaded successfully
+        if df is None or df.empty:
+            st.error("The dataset is empty or could not be loaded.")
+            return None
+        
+        # Calculate car age if 'Year' column exists
+        if 'Year' in df.columns:
+            df['car_age'] = 2024 - df['Year']
+            df.drop(columns=['Year'], inplace=True)
 
-    # Check for the existence of each column before creating dummy variables
-    categorical_columns = ['Fuel_Type', 'Transmission', 'Owner_Type']
-    available_columns = [col for col in categorical_columns if col in df.columns]
+        # Check for categorical columns before converting to dummy variables
+        categorical_columns = ['Fuel_Type', 'Transmission', 'Owner_Type']
+        available_columns = [col for col in categorical_columns if col in df.columns]
+        
+        if available_columns:
+            df = pd.get_dummies(df, columns=available_columns, drop_first=True)
+        
+        return df
     
-    if available_columns:
-        df = pd.get_dummies(df, columns=available_columns, drop_first=True)
-    
-    return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return None
+
 
 
 # ---- MAIN PAGE NAVIGATION ----
