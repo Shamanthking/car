@@ -17,7 +17,7 @@ st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_
 page_bg_img = '''
 <style>
 .stApp {
-    background-image: url("https://example.com/black-car-image.jpg"); /* Change this URL to a black car image */
+    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg"); /* Change this URL to a black car image */
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
