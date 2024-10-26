@@ -135,8 +135,12 @@ def show_model_comparison():
 
 # ---- CONTACT PAGE ----
 def show_contact():
-    st.header("Contact")
-    st.write("For any inquiries, please contact us at: info@carpricing.com")
+    st.header("Contact Us")
+    st.markdown("""
+        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
+        - [Instagram](https://www.instagram.com/shamanth_m_)
+        - [Email](mailto:shamanth2626@gmail.com)
+    """)
 
 # ---- MAIN FUNCTION ----
 def main():
