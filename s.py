@@ -18,7 +18,7 @@ st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_
 def load_data():
     """Loads and preprocesses the car dataset."""
     try:
-        df = pd.read_csv('/mnt/data/CAR DETAILS FROM deekshith.csv', on_bad_lines='skip')
+        df = pd.read_csv('data/CAR DETAILS FROM deekshith.csv', on_bad_lines='skip')
         df['car_age'] = 2024 - df['year']
         df.drop(columns=['year'], inplace=True)
 
