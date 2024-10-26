@@ -1,14 +1,10 @@
 import streamlit as st
 import pandas as pd
-import requests
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.preprocessing import OrdinalEncoder
 import plotly.express as px
 import plotly.graph_objects as go
-import numpy as np
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
@@ -46,22 +42,27 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return None
 
+# ---- INITIALIZE SESSION STATE FOR PAGE TRACKING ----
+if 'page' not in st.session_state:
+    st.session_state.page = 'home'  # Default page is home
+
+# Function to switch page
+def switch_page(page_name):
+    st.session_state.page = page_name
+
+# Sidebar Navigation buttons
+st.sidebar.title("Navigation")
+st.sidebar.button("Home", on_click=switch_page, args=('home',))
+st.sidebar.button("Prediction", on_click=switch_page, args=('prediction',))
+st.sidebar.button("Data Analysis", on_click=switch_page, args=('analysis',))
+st.sidebar.button("Model Comparison", on_click=switch_page, args=('model_comparison',))
+st.sidebar.button("Contact", on_click=switch_page, args=('contact',))
+
 # ---- PAGE SECTIONS ----
 def show_home():
     st.title("Car Price Prediction")
     st.subheader("Get accurate predictions on car prices and explore data insights.")
-    
-    # Navigation buttons
-    if st.button("Prediction"):
-        show_prediction()
-    elif st.button("Data Analysis"):
-        show_analysis()
-    elif st.button("Model Comparison"):
-        show_model_comparison()
-    elif st.button("Contact"):
-        show_contact()
 
-# ---- PREDICTION PAGE ----
 def show_prediction():
     st.header("Car Price Prediction")
 
@@ -98,7 +99,6 @@ def show_prediction():
         prediction = model.predict(input_data)
         st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
-# ---- ANALYSIS PAGE ----
 def show_analysis():
     st.header("Data Analysis")
     df = load_data()
@@ -121,7 +121,6 @@ def show_analysis():
         st.subheader("Feature Correlation Heatmap")
         plot_correlation_heatmap(df)
 
-# ---- MODEL COMPARISON PAGE ----
 def show_model_comparison():
     st.header("Model Comparison")
     st.write("Compare model performance metrics on training and test datasets.")
@@ -133,7 +132,6 @@ def show_model_comparison():
         plot_feature_importance(model, X_train, y_train)
         plot_gbm_loss(GradientBoostingRegressor(n_estimators=100, random_state=42), X_train, y_train)
 
-# ---- CONTACT PAGE ----
 def show_contact():
     st.header("Contact Us")
     st.markdown("""
@@ -141,10 +139,6 @@ def show_contact():
         - [Instagram](https://www.instagram.com/shamanth_m_)
         - [Email](mailto:shamanth2626@gmail.com)
     """)
-
-# ---- MAIN FUNCTION ----
-def main():
-    show_home()
 
 # ---- HELPER FUNCTIONS ----
 def train_random_forest_model(df):
@@ -199,5 +193,14 @@ def plot_gbm_loss(model, X_train, y_train):
     fig.update_layout(title="GBM Loss Function vs Number of Trees", xaxis_title="Number of Trees", yaxis_title="Loss")
     st.plotly_chart(fig)
 
-if __name__ == "__main__":
-    main()
+# ---- MAIN SECTION ----
+if st.session_state.page == 'home':
+    show_home()
+elif st.session_state.page == 'prediction':
+    show_prediction()
+elif st.session_state.page == 'analysis':
+    show_analysis()
+elif st.session_state.page == 'model_comparison':
+    show_model_comparison()
+elif st.session_state.page == 'contact':
+    show_contact()
