@@ -123,15 +123,23 @@ def show_contact():
 
 # ---- HELPER FUNCTIONS ----
 def train_model(df):
-    X = df.drop(columns=['New_Price'], errors='ignore')  # Ensure this is the target variable
-    y = df['New_Price']  # Change target to 'New_Price'
+    # Check if the 'New_Price' column is present
+    if 'New_Price' not in df.columns:
+        st.error("The dataset does not contain the 'New_Price' column needed for predictions.")
+        return None, None, None, None, None
     
+    X = df.drop(columns=['New_Price'])
+    y = df['New_Price']
+    
+    # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
+    # Model training
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     
     return model, X_train, X_test, y_train, y_test
+
 
 def get_prediction_input(car_age, km_driven, seats, max_power, mileage, engine_cc, brand, fuel_type, seller_type, transmission, owner_type):
     input_data = pd.DataFrame({
