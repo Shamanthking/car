@@ -26,7 +26,7 @@ def set_background(image_url):
 @st.cache_data
 def load_data():
     # Load the dataset
-    df = pd.read_csv('/mnt/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+    df = pd.read_csv('data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
     
     # Calculate car age if 'Year' column exists
     if 'Year' in df.columns:
