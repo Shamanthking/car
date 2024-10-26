@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import requests
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
@@ -77,6 +79,16 @@ def show_home():
         st.experimental_set_query_params(page="Predict")
         show_predict()
 
+UNSPLASH_ACCESS_KEY = 'bbosDinjZlp3X5JAijT0QaJSHMfnEO860BXL5ltL_2M'
+
+def get_car_image(brand):
+    url = f"https://api.unsplash.com/search/photos?query={brand}&client_id={UNSPLASH_ACCESS_KEY}"
+    response = requests.get(url)
+    data = response.json()
+    if data and data['results']:
+        return data['results'][0]['urls']['regular']
+    return None
+
 # ---- PREDICT PAGE ----
 def show_predict():
     st.title("Car Price Prediction")
@@ -96,6 +108,11 @@ def show_predict():
     seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
     transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
     owner_type = st.selectbox("Owner Type", ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'])
+    
+        # Fetch and display the brand image
+    image_url = get_car_image(brand)
+    if image_url:
+        st.image(image_url, caption=f"{brand} - Representative Image", use_column_width=True)
 
     # Preparing input data
     input_data = get_prediction_input(car_age, km_driven, seats, max_power, mileage, engine_cc, brand, fuel_type, seller_type, transmission, owner_type)
