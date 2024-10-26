@@ -13,6 +13,20 @@ import numpy as np
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
 
+# ---- CUSTOM CSS FOR BACKGROUND ----
+page_bg_img = '''
+<style>
+.stApp {
+    background-image: url("https://in.pinterest.com/pin/604749056203375514/");
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    color: white;
+}
+</style>
+'''
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
@@ -31,7 +45,43 @@ def load_data():
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
+# ---- HOME PAGE ----
+def show_home():
+    st.title("Car Price Prediction")
+    st.subheader("Get accurate predictions on car prices and explore data insights.")
 
+    # Load data and train model
+    df = load_data()
+    if df is not None:
+        model, X_train, X_test, y_train, y_test = train_model(df)
+
+        # Prediction input fields
+        car_age = st.slider("Car Age", 0, 20, 10)
+        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+        seats = st.selectbox("Seats", [2, 4, 5, 7])
+        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+        
+        # Prepare input for prediction
+        input_data = pd.DataFrame({
+            'car_age': [car_age],
+            'Kilometers_Driven': [km_driven],
+            'Seats': [seats],
+            'Power': [max_power],
+            'Mileage': [mileage],
+            'Engine': [engine_cc]
+        })
+
+        # Add any missing columns for prediction
+        missing_cols = set(X_train.columns) - set(input_data.columns)
+        for col in missing_cols:
+            input_data[col] = 0
+        input_data = input_data[X_train.columns]
+
+        # Prediction
+        prediction = model.predict(input_data)
+        st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 # ---- MAIN PAGE NAVIGATION ----
 def main():
     """Navigation between different sections of the app."""
@@ -51,9 +101,41 @@ def main():
 
 # ---- HOME PAGE ----
 def show_home():
-    """Displays the home page with a brief description."""
-    st.title("Car Price Prediction & Analysis")
-    st.subheader("Predict car prices and explore model performance.")
+    st.title("Car Price Prediction")
+    st.subheader("Get accurate predictions on car prices and explore data insights.")
+
+    # Load data and train model
+    df = load_data()
+    if df is not None:
+        model, X_train, X_test, y_train, y_test = train_model(df)
+
+        # Prediction input fields
+        car_age = st.slider("Car Age", 0, 20, 10)
+        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+        seats = st.selectbox("Seats", [2, 4, 5, 7])
+        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+        
+        # Prepare input for prediction
+        input_data = pd.DataFrame({
+            'car_age': [car_age],
+            'Kilometers_Driven': [km_driven],
+            'Seats': [seats],
+            'Power': [max_power],
+            'Mileage': [mileage],
+            'Engine': [engine_cc]
+        })
+
+        # Add any missing columns for prediction
+        missing_cols = set(X_train.columns) - set(input_data.columns)
+        for col in missing_cols:
+            input_data[col] = 0
+        input_data = input_data[X_train.columns]
+
+        # Prediction
+        prediction = model.predict(input_data)
+        st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
 # ---- ANALYSIS PAGE ----
 def show_analysis():
