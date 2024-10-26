@@ -45,6 +45,7 @@ def load_data():
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
+
 # ---- HOME PAGE ----
 def show_home():
     st.title("Car Price Prediction")
@@ -53,7 +54,7 @@ def show_home():
     # Load data and train model
     df = load_data()
     if df is not None:
-        model, X_train, X_test, y_train, y_test = train_model(df)
+        model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
 
         # Prediction input fields
         car_age = st.slider("Car Age", 0, 20, 10)
@@ -66,65 +67,11 @@ def show_home():
         # Prepare input for prediction
         input_data = pd.DataFrame({
             'car_age': [car_age],
-            'Kilometers_Driven': [km_driven],
+            'km_driven': [km_driven],
             'Seats': [seats],
-            'Power': [max_power],
-            'Mileage': [mileage],
-            'Engine': [engine_cc]
-        })
-
-        # Add any missing columns for prediction
-        missing_cols = set(X_train.columns) - set(input_data.columns)
-        for col in missing_cols:
-            input_data[col] = 0
-        input_data = input_data[X_train.columns]
-
-        # Prediction
-        prediction = model.predict(input_data)
-        st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
-# ---- MAIN PAGE NAVIGATION ----
-def main():
-    """Navigation between different sections of the app."""
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Analysis", "Prediction", "Model Comparison", "Contact"])
-    
-    if page == "Home":
-        show_home()
-    elif page == "Analysis":
-        show_analysis()
-    elif page == "Prediction":
-        show_predict()
-    elif page == "Model Comparison":
-        show_model_comparison()
-    elif page == "Contact":
-        show_contact()
-
-# ---- HOME PAGE ----
-def show_home():
-    st.title("Car Price Prediction")
-    st.subheader("Get accurate predictions on car prices and explore data insights.")
-
-    # Load data and train model
-    df = load_data()
-    if df is not None:
-        model, X_train, X_test, y_train, y_test = train_model(df)
-
-        # Prediction input fields
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        seats = st.selectbox("Seats", [2, 4, 5, 7])
-        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        
-        # Prepare input for prediction
-        input_data = pd.DataFrame({
-            'car_age': [car_age],
-            'Kilometers_Driven': [km_driven],
-            'Seats': [seats],
-            'Power': [max_power],
-            'Mileage': [mileage],
-            'Engine': [engine_cc]
+            'max_power': [max_power],
+            'mileage': [mileage],
+            'engine_cc': [engine_cc]
         })
 
         # Add any missing columns for prediction
@@ -137,11 +84,8 @@ def show_home():
         prediction = model.predict(input_data)
         st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
-# ---- ANALYSIS PAGE ----
-def show_analysis():
-    """Displays various data visualizations for exploratory analysis."""
-    st.title("Data Analysis")
-    df = load_data()
+    # Visualizations
+    st.subheader("Data Analysis")
 
     if df is not None:
         # Bar charts for categorical variables
@@ -161,31 +105,6 @@ def show_analysis():
         st.subheader("Feature Correlation Heatmap")
         plot_correlation_heatmap(df)
 
-# ---- PREDICTION PAGE ----
-def show_predict():
-    """Predicts the selling price based on user input."""
-    st.title("Car Price Prediction")
-    df = load_data()
-    if df is not None:
-        model, X_train, _, _, _ = train_random_forest_model(df)
-        input_data = get_prediction_input(X_train)
-        display_prediction(model, input_data, X_train)
-
-# ---- MODEL COMPARISON PAGE ----
-def show_model_comparison():
-    """Compares RMSE, MAE, and R² Score across different models."""
-    st.title("Model Comparison")
-    df = load_data()
-    if df is not None:
-        # Splitting Data
-        X = df.drop(columns=['selling_price', 'name'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        # Model metrics calculation
-        model_metrics = calculate_model_metrics(X_train, X_test, y_train, y_test)
-        st.dataframe(model_metrics)
-
         # Scatter plot for Random Forest predictions vs. actual
         plot_rf_scatter(X_train, X_test, y_train, y_test)
 
@@ -195,15 +114,9 @@ def show_model_comparison():
         # Gradient Boosting loss function plot
         plot_gbm_loss(GradientBoostingRegressor(n_estimators=100, random_state=42), X_train, y_train)
 
-# ---- CONTACT PAGE ----
-def show_contact():
-    """Contact details section."""
-    st.title("Contact Us")
-    st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
-        - [Instagram](https://www.instagram.com/shamanth_m_)
-        - [Email](mailto:shamanth2626@gmail.com)
-    """)
+# ---- MAIN FUNCTION ----
+def main():
+    show_home()
 
 # ---- HELPER FUNCTIONS ----
 
@@ -215,36 +128,6 @@ def train_random_forest_model(df):
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     return model, X_train, X_test, y_train, y_test
-
-def get_prediction_input(X_train):
-    """Gathers user input for prediction."""
-    car_age = st.slider("Car Age", 0, 20, 10)
-    km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-    seats = st.selectbox("Seats", [2, 4, 5, 7])
-    max_power = st.number_input("Max Power (in bph)", 50, 500, 100)
-    mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-    engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-    
-    input_data = pd.DataFrame({
-        'car_age': [car_age],
-        'km_driven': [km_driven],
-        'Seats': [seats],
-        'max_power': [max_power],
-        'mileage': [mileage],
-        'engine_cc': [engine_cc]
-    })
-    
-    # Align columns with training data
-    for col in set(X_train.columns) - set(input_data.columns):
-        input_data[col] = 0
-    input_data = input_data[X_train.columns]
-    
-    return input_data
-
-def display_prediction(model, input_data, X_train):
-    """Displays the predicted car price based on the model."""
-    prediction = model.predict(input_data)
-    st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
 def plot_bar_chart(df, column, title):
     """Plots a bar chart for a specified column."""
