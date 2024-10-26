@@ -99,9 +99,13 @@ def show_prediction():
         prediction = model.predict(input_data)
         st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
+
 def show_analysis():
     st.header("Data Analysis")
     df = load_data()
+
+    if df is not None:
+        st.write("Available columns in DataFrame:", df.columns)  # Debugging line
 
     if df is not None:
         # Bar charts for categorical variables
@@ -152,9 +156,13 @@ def train_random_forest_model(df):
 
 def plot_bar_chart(df, column, title):
     """Plots a bar chart for a specified column."""
-    counts = df[column].value_counts()
-    fig = px.bar(counts, x=counts.index, y=counts.values, labels={'x': column, 'y': 'Count'}, title=title)
-    st.plotly_chart(fig)
+    if column in df.columns:
+        counts = df[column].value_counts()
+        fig = px.bar(counts, x=counts.index, y=counts.values, labels={'x': column, 'y': 'Count'}, title=title)
+        st.plotly_chart(fig)
+    else:
+        st.warning(f"Column '{column}' not found in DataFrame.")
+
 
 def plot_histogram(df, column, title):
     """Plots a histogram for a specified column."""
