@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
@@ -107,7 +110,49 @@ def show_analysis():
     if df is not None:
         st.write("Available columns in DataFrame:", df.columns)  # Debugging line
 
-    if df is not None:
+        # Performance Metrics Summary
+        metrics_summary = pd.DataFrame(columns=["Model", "RMSE", "MAE", "R² Score"])
+
+        # Train and evaluate Linear Regression
+        lr_model = LinearRegression()
+        X = df.drop(columns=['selling_price', 'name'])
+        y = df['selling_price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        lr_model.fit(X_train, y_train)
+        lr_predictions = lr_model.predict(X_test)
+
+        lr_rmse = np.sqrt(mean_squared_error(y_test, lr_predictions))
+        lr_mae = mean_absolute_error(y_test, lr_predictions)
+        lr_r2 = r2_score(y_test, lr_predictions)
+
+        metrics_summary = metrics_summary.append({"Model": "Linear Regression", "RMSE": lr_rmse, "MAE": lr_mae, "R² Score": lr_r2}, ignore_index=True)
+
+        # Train and evaluate Random Forest
+        rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+        rf_model.fit(X_train, y_train)
+        rf_predictions = rf_model.predict(X_test)
+
+        rf_rmse = np.sqrt(mean_squared_error(y_test, rf_predictions))
+        rf_mae = mean_absolute_error(y_test, rf_predictions)
+        rf_r2 = r2_score(y_test, rf_predictions)
+
+        metrics_summary = metrics_summary.append({"Model": "Random Forest", "RMSE": rf_rmse, "MAE": rf_mae, "R² Score": rf_r2}, ignore_index=True)
+
+        # Train and evaluate Gradient Boosting
+        gb_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
+        gb_model.fit(X_train, y_train)
+        gb_predictions = gb_model.predict(X_test)
+
+        gb_rmse = np.sqrt(mean_squared_error(y_test, gb_predictions))
+        gb_mae = mean_absolute_error(y_test, gb_predictions)
+        gb_r2 = r2_score(y_test, gb_predictions)
+
+        metrics_summary = metrics_summary.append({"Model": "Gradient Boosting", "RMSE": gb_rmse, "MAE": gb_mae, "R² Score": gb_r2}, ignore_index=True)
+
+        # Display metrics summary as a table
+        st.subheader("Model Performance Metrics")
+        st.table(metrics_summary)
+
         # Bar charts for categorical variables
         st.subheader("Bar Charts for Categorical Variables")
         plot_bar_chart(df, 'name', 'Brand Distribution')
@@ -163,7 +208,6 @@ def plot_bar_chart(df, column, title):
     else:
         st.warning(f"Column '{column}' not found in DataFrame.")
 
-
 def plot_histogram(df, column, title):
     """Plots a histogram for a specified column."""
     fig = px.histogram(df, x=column, title=title, color_discrete_sequence=['#636EFA'])
@@ -180,7 +224,6 @@ def plot_correlation_heatmap(df):
         st.plotly_chart(fig)
     else:
         st.warning("No numeric columns available for correlation heatmap.")
-
 
 def plot_rf_scatter(X_train, X_test, y_train, y_test):
     """Scatter plot of predicted vs. actual values for Random Forest."""
