@@ -27,7 +27,7 @@ def set_background(image_url):
 def load_data():
     try:
         # Load the dataset
-        df = pd.read_csv('/mnt/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+        df = pd.read_csv('data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
         
         # Confirm the data loaded successfully
         if df is None or df.empty:
