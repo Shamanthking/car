@@ -9,17 +9,12 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
 
 # ---- CSS STYLING ----
-def local_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-# Apply custom CSS for background image
-def set_background(image_path):
+def set_background(image_url):
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background: url({image_path});
+            background-image: url({image_url});
             background-size: cover;
         }}
         </style>
@@ -30,8 +25,8 @@ def set_background(image_path):
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    df = pd.read_csv('data/full data.csv', on_bad_lines='skip')
-    df['car_age'] = 2024 - df['Year']  # Use the correct column name 'Year'
+    df = pd.read_csv('/mnt/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+    df['car_age'] = 2024 - df.get('Year', 2024)  # Use the correct column name 'Year' if exists
     df.drop(columns=['Year'], inplace=True, errors='ignore')
     # Convert categorical columns to dummy variables
     df = pd.get_dummies(df, columns=['Fuel_Type', 'Transmission', 'Owner_Type'], drop_first=True)
@@ -97,11 +92,11 @@ def show_analysis():
 
     if selected_brand != "All":
         df = df[df['Name'] == selected_brand]
-    if selected_fuel != "All":
+    if selected_fuel != "All" and f'Fuel_Type_{selected_fuel}' in df.columns:
         df = df[df[f'Fuel_Type_{selected_fuel}'] == 1]
-    if selected_seller_type != "All":
+    if selected_seller_type != "All" and f'seller_type_{selected_seller_type}' in df.columns:
         df = df[df[f'seller_type_{selected_seller_type}'] == 1]
-    if selected_transmission != "All":
+    if selected_transmission != "All" and f'transmission_{selected_transmission}' in df.columns:
         df = df[df[f'transmission_{selected_transmission}'] == 1]
 
     display_visualizations(df)
