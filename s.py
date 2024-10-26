@@ -25,7 +25,7 @@ def set_background(image_url):
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    df = pd.read_csv('/mnt/data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
+    df = pd.read_csv('data/cleaned_car_data_with_new_price (1).csv', on_bad_lines='skip')
     df['car_age'] = 2024 - df.get('Year', 2024)  # Use the correct column name 'Year' if exists
     df.drop(columns=['Year'], inplace=True, errors='ignore')
     # Convert categorical columns to dummy variables
