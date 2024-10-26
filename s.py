@@ -17,7 +17,7 @@ st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_
 page_bg_img = '''
 <style>
 .stApp {
-    background-image: url("https://in.pinterest.com/pin/604749056203375514/");
+    background-image: url("https://example.com/black-car-image.jpg"); /* Change this URL to a black car image */
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
@@ -46,10 +46,24 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return None
 
-# ---- HOME PAGE ----
+# ---- PAGE SECTIONS ----
 def show_home():
     st.title("Car Price Prediction")
     st.subheader("Get accurate predictions on car prices and explore data insights.")
+    
+    # Navigation buttons
+    if st.button("Prediction"):
+        show_prediction()
+    elif st.button("Data Analysis"):
+        show_analysis()
+    elif st.button("Model Comparison"):
+        show_model_comparison()
+    elif st.button("Contact"):
+        show_contact()
+
+# ---- PREDICTION PAGE ----
+def show_prediction():
+    st.header("Car Price Prediction")
 
     # Load data and train model
     df = load_data()
@@ -84,8 +98,10 @@ def show_home():
         prediction = model.predict(input_data)
         st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
-    # Visualizations
-    st.subheader("Data Analysis")
+# ---- ANALYSIS PAGE ----
+def show_analysis():
+    st.header("Data Analysis")
+    df = load_data()
 
     if df is not None:
         # Bar charts for categorical variables
@@ -105,21 +121,28 @@ def show_home():
         st.subheader("Feature Correlation Heatmap")
         plot_correlation_heatmap(df)
 
-        # Scatter plot for Random Forest predictions vs. actual
+# ---- MODEL COMPARISON PAGE ----
+def show_model_comparison():
+    st.header("Model Comparison")
+    st.write("Compare model performance metrics on training and test datasets.")
+    df = load_data()
+    
+    if df is not None:
+        model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
         plot_rf_scatter(X_train, X_test, y_train, y_test)
-
-        # Feature importance plot for Random Forest
-        plot_feature_importance(RandomForestRegressor(n_estimators=100, random_state=42), X_train, y_train)
-
-        # Gradient Boosting loss function plot
+        plot_feature_importance(model, X_train, y_train)
         plot_gbm_loss(GradientBoostingRegressor(n_estimators=100, random_state=42), X_train, y_train)
+
+# ---- CONTACT PAGE ----
+def show_contact():
+    st.header("Contact")
+    st.write("For any inquiries, please contact us at: info@carpricing.com")
 
 # ---- MAIN FUNCTION ----
 def main():
     show_home()
 
 # ---- HELPER FUNCTIONS ----
-
 def train_random_forest_model(df):
     """Trains a Random Forest model on the data."""
     X = df.drop(columns=['selling_price', 'name'])
