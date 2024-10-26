@@ -170,10 +170,17 @@ def plot_histogram(df, column, title):
     st.plotly_chart(fig)
 
 def plot_correlation_heatmap(df):
-    """Plots a correlation heatmap."""
-    corr_matrix = df.corr()
-    fig = px.imshow(corr_matrix, text_auto=True, title="Feature Correlation Heatmap", color_continuous_scale="RdBu")
-    st.plotly_chart(fig)
+    """Plots a correlation heatmap of numeric columns."""
+    # Select only numeric columns
+    numeric_df = df.select_dtypes(include=['float64', 'int64'])
+
+    if not numeric_df.empty:
+        corr_matrix = numeric_df.corr()
+        fig = px.imshow(corr_matrix, text_auto=True, title="Feature Correlation Heatmap", color_continuous_scale="RdBu")
+        st.plotly_chart(fig)
+    else:
+        st.warning("No numeric columns available for correlation heatmap.")
+
 
 def plot_rf_scatter(X_train, X_test, y_train, y_test):
     """Scatter plot of predicted vs. actual values for Random Forest."""
