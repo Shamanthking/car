@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import plotly.express as px
 import plotly.graph_objects as go
@@ -31,7 +31,7 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
-        
+
         # Check for missing values and handle them
         if df.isnull().sum().any():
             st.warning("Data contains missing values. Handling missing values...")
@@ -40,10 +40,10 @@ def load_data():
         df['car_age'] = 2024 - df['model_year']
         df.drop(columns=['model_year'], inplace=True)
 
-        # Encoding categorical features
-        encoder = OrdinalEncoder()
-        categorical_cols = ['fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
-        df[categorical_cols] = encoder.fit_transform(df[categorical_cols])
+        # One-Hot Encoding for categorical features
+        categorical_cols = ['brand', 'fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
+        df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+
         return df
     
     except Exception as e:
@@ -90,7 +90,7 @@ def show_prediction():
         
         # Prepare input for prediction
         input_data = pd.DataFrame({
-            'brand': [brand],
+            'brand_' + brand: [1],  # One-hot encoding
             'car_age': [car_age],
             'km_driven': [km_driven],
             'Seats': [seats],
@@ -198,7 +198,7 @@ def show_model_comparison():
                 mae = mean_absolute_error(y_test, y_pred)
                 r2 = r2_score(y_test, y_pred)
 
-                # Store metrics
+                # Append metrics
                 metrics["Model"].append(model_name)
                 metrics["RMSE"].append(rmse)
                 metrics["MAE"].append(mae)
@@ -232,7 +232,7 @@ def train_random_forest_model(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     model = RandomForestRegressor(n_estimators=100, random_state=42)
-    
+
     # Ensure no NaNs in training data
     if X_train.isnull().values.any() or y_train.isnull().values.any():
         st.error("Training data contains NaN values. Please clean your data.")
