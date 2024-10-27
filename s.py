@@ -30,19 +30,19 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
-
+        
         # Check for missing values and handle them
         if df.isnull().sum().any():
             st.warning("Data contains missing values. Handling missing values...")
             df.fillna(0, inplace=True)  # Filling missing values with 0 or use appropriate method
-
+        
         df['car_age'] = 2024 - df['model_year']
         df.drop(columns=['model_year'], inplace=True)
-
+        
         # One-Hot Encoding for categorical features
         categorical_cols = ['brand', 'fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
-
+        
         return df
     
     except Exception as e:
@@ -119,6 +119,7 @@ def show_analysis():
         # Brand Distribution
         st.subheader("Car Brand Distribution")
         brand_count = df['brand'].value_counts()
+        st.write("Brand counts:", brand_count)  # Debugging statement
         fig = px.bar(brand_count, x=brand_count.index, y=brand_count.values, labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
         st.plotly_chart(fig)
 
@@ -132,7 +133,7 @@ def show_analysis():
         ext_color_counts = df['ext_col'].value_counts().nlargest(10)
         fig = px.bar(ext_color_counts, x=ext_color_counts.index, y=ext_color_counts.values, title="Top 10 Exterior Colors")
         st.plotly_chart(fig)
-        
+
         int_color_counts = df['int_col'].value_counts().nlargest(10)
         fig = px.bar(int_color_counts, x=int_color_counts.index, y=int_color_counts.values, title="Top 10 Interior Colors")
         st.plotly_chart(fig)
@@ -140,6 +141,7 @@ def show_analysis():
         # Transmission Breakdown
         st.subheader("Transmission Type Breakdown")
         transmission_count = df['transmission'].value_counts()
+        st.write("Transmission counts:", transmission_count)  # Debugging statement
         fig = px.pie(transmission_count, names=transmission_count.index, values=transmission_count.values, title="Transmission Type Distribution")
         st.plotly_chart(fig)
 
@@ -207,39 +209,29 @@ def show_model_comparison():
 
         # Display comparison
         metrics_df = pd.DataFrame(metrics)
-        st.table(metrics_df)
+        st.write(metrics_df)
 
-        # Visualize RMSE comparison
-        fig = go.Figure(data=[go.Bar(name='RMSE', x=metrics_df['Model'], y=metrics_df['RMSE']),
-                              go.Bar(name='MAE', x=metrics_df['Model'], y=metrics_df['MAE']),
-                              go.Bar(name='R² Score', x=metrics_df['Model'], y=metrics_df['R² Score'])])
-        fig.update_layout(title='Model Comparison Metrics', barmode='group')
+        # Bar chart for model performance
+        fig = go.Figure()
+        for metric in ['RMSE', 'MAE', 'R² Score']:
+            fig.add_trace(go.Bar(
+                x=metrics_df["Model"],
+                y=metrics_df[metric],
+                name=metric,
+                hoverinfo='y'
+            ))
+        fig.update_layout(title="Model Performance Comparison", barmode='group')
         st.plotly_chart(fig)
 
 def show_contact():
-    st.header("Contact Information")
-    st.write("For any inquiries, please reach out to [your_email@example.com].")
+    st.header("Contact Us")
+    st.markdown("""
+        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
+        - [Instagram](https://www.instagram.com/shamanth_m_)
+        - [Email](mailto:shamanth2626@gmail.com)
+    """)
 
-# ---- TRAIN RANDOM FOREST MODEL ----
-@st.cache_resource
-def train_random_forest_model(df):
-    """Trains the Random Forest model."""
-    X = df.drop(columns=['price'])
-    y = df['price']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-
-    # Ensure no NaNs in training data
-    if X_train.isnull().values.any() or y_train.isnull().values.any():
-        st.error("Training data contains NaN values. Please clean your data.")
-        return None
-
-    model.fit(X_train, y_train)
-
-    return model, X_train, X_test, y_train, y_test
-
-# ---- RENDERING PAGES ----
+# ---- PAGE RENDERING BASED ON SELECTION ----
 if st.session_state.page == 'home':
     show_home()
 elif st.session_state.page == 'prediction':
