@@ -24,26 +24,6 @@ page_bg_img = '''
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# ---- DATASET DESCRIPTION ----
-dataset_description = """
-### Used Car Price Prediction Dataset
-This dataset, sourced from [cars.com](https://www.cars.com), contains 4,009 records of used car listings with the following features:
-
-- **Brand & Model**: The brand and model of each vehicle.
-- **Model Year**: The manufacturing year, useful for estimating depreciation.
-- **Mileage**: The mileage of the vehicle, indicating wear and tear.
-- **Fuel Type**: The type of fuel used by the vehicle (gasoline, diesel, electric, hybrid).
-- **Engine Type**: Specifications related to the vehicle's engine performance.
-- **Transmission**: Whether the vehicle has automatic or manual transmission.
-- **Exterior & Interior Colors**: Color details that may influence aesthetic preference.
-- **Accident History**: Indicates whether the vehicle has a history of accidents.
-- **Clean Title**: Shows if the vehicle has a clean title, impacting resale value.
-- **Price**: The listing price of the vehicle.
-
-This dataset is valuable for automotive enthusiasts, researchers, and anyone interested in analyzing market trends or making informed car purchasing decisions.
-"""
-st.sidebar.markdown(dataset_description)
-
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
@@ -51,31 +31,33 @@ def load_data():
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
 
-        # Handle missing values
+        # Check for missing values and handle them
         if df.isnull().sum().any():
-            df.fillna(0, inplace=True)
+            st.warning("Data contains missing values. Handling missing values...")
+            df.fillna(0, inplace=True)  # Filling missing values with 0 or use appropriate method
 
-        # Calculate car age and drop model_year
         df['car_age'] = 2024 - df['model_year']
         df.drop(columns=['model_year'], inplace=True)
 
-        # One-Hot Encoding for categorical features including 'brand'
+        # One-Hot Encoding for categorical features
         categorical_cols = ['brand', 'fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
         return df
+    
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
 
-# ---- PAGE NAVIGATION ----
+# ---- INITIALIZE SESSION STATE FOR PAGE TRACKING ----
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
 
+# Function to switch page
 def switch_page(page_name):
     st.session_state.page = page_name
 
-# Sidebar Navigation
+# Sidebar Navigation buttons
 st.sidebar.title("Navigation")
 st.sidebar.button("Home", on_click=switch_page, args=('home',))
 st.sidebar.button("Prediction", on_click=switch_page, args=('prediction',))
@@ -83,20 +65,21 @@ st.sidebar.button("Data Analysis", on_click=switch_page, args=('analysis',))
 st.sidebar.button("Model Comparison", on_click=switch_page, args=('model_comparison',))
 st.sidebar.button("Contact", on_click=switch_page, args=('contact',))
 
-# ---- PAGE FUNCTIONS ----
+# ---- PAGE SECTIONS ----
 def show_home():
-    st.title("Car Price Prediction & Analysis Dashboard")
-    st.subheader("Use this dashboard to predict car prices and explore various trends in car features.")
+    st.title("Car Price Prediction")
+    st.subheader("Get accurate predictions on car prices and explore data insights.")
 
 def show_prediction():
     st.header("Car Price Prediction")
 
+    # Load data and train model
     df = load_data()
     if df is not None:
         model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
 
         # Prediction input fields
-        brand = st.selectbox("Brand", sorted([col.replace('brand_', '') for col in X_train.columns if 'brand_' in col]))
+        brand = st.selectbox("Brand", sorted(df['brand'].unique()))
         car_age = st.slider("Car Age", 0, 20, 10)
         km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
         seats = st.selectbox("Seats", [2, 4, 5, 7])
@@ -106,6 +89,7 @@ def show_prediction():
         
         # Prepare input for prediction
         input_data = pd.DataFrame({
+            'brand_' + brand: [1],  # One-hot encoding
             'car_age': [car_age],
             'km_driven': [km_driven],
             'Seats': [seats],
@@ -114,12 +98,7 @@ def show_prediction():
             'engine_cc': [engine_cc]
         })
 
-        # One-hot encode selected brand
-        for col in X_train.columns:
-            if col.startswith("brand_"):
-                input_data[col] = 1 if col == f"brand_{brand}" else 0
-
-        # Add missing columns
+        # Add missing columns for prediction
         missing_cols = set(X_train.columns) - set(input_data.columns)
         for col in missing_cols:
             input_data[col] = 0
@@ -148,34 +127,64 @@ def show_analysis():
         fig = px.box(df, x="accident", y="price", title="Price Distribution by Accident History")
         st.plotly_chart(fig)
 
+        # Exterior and Interior Color Distribution
+        st.subheader("Top 10 Exterior and Interior Colors")
+        ext_color_counts = df['ext_col'].value_counts().nlargest(10)
+        fig = px.bar(ext_color_counts, x=ext_color_counts.index, y=ext_color_counts.values, title="Top 10 Exterior Colors")
+        st.plotly_chart(fig)
+        
+        int_color_counts = df['int_col'].value_counts().nlargest(10)
+        fig = px.bar(int_color_counts, x=int_color_counts.index, y=int_color_counts.values, title="Top 10 Interior Colors")
+        st.plotly_chart(fig)
+
         # Transmission Breakdown
         st.subheader("Transmission Type Breakdown")
         transmission_count = df['transmission'].value_counts()
         fig = px.pie(transmission_count, names=transmission_count.index, values=transmission_count.values, title="Transmission Type Distribution")
         st.plotly_chart(fig)
 
-        # Price vs Mileage and Car Age
-        st.subheader("Price vs Mileage and Car Age")
+        # Price vs. Mileage and Model Year
+        st.subheader("Price vs Mileage and Model Year")
         fig = px.scatter(df, x="mileage", y="price", trendline="ols", title="Mileage vs. Price")
         st.plotly_chart(fig)
         fig = px.scatter(df, x="car_age", y="price", trendline="ols", title="Car Age vs. Price")
         st.plotly_chart(fig)
 
+        # Brand Price Variations
+        st.subheader("Price Variations by Brand")
+        fig = px.violin(df, x="brand", y="price", box=True, title="Price Distribution by Brand")
+        st.plotly_chart(fig)
+
+        # Correlation Heatmap
+        st.subheader("Feature Correlation Heatmap")
+        correlation_matrix = df.corr()
+        fig = px.imshow(correlation_matrix, text_auto=True, color_continuous_scale="RdBu", title="Feature Correlation Heatmap")
+        st.plotly_chart(fig)
+
+        # Histograms for Numerical Columns
+        st.subheader("Distribution of Numerical Features")
+        for column in ['price', 'mileage', 'car_age', 'engine_cc']:
+            fig = px.histogram(df, x=column, title=f"Distribution of {column.capitalize()}")
+            st.plotly_chart(fig)
+
 def show_model_comparison():
     st.header("Model Comparison")
     st.write("Compare model performance metrics on training and test datasets.")
     
+    # Load data and split
     df = load_data()
     if df is not None:
         X = df.drop(columns=['price'])
         y = df['price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        # Models to compare
         models = {
             "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
             "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42)
         }
 
+        # Dictionary to store metrics
         metrics = {"Model": [], "RMSE": [], "MAE": [], "R² Score": []}
 
         for model_name, model in models.items():
@@ -183,10 +192,12 @@ def show_model_comparison():
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
 
+                # Calculate metrics
                 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
                 mae = mean_absolute_error(y_test, y_pred)
                 r2 = r2_score(y_test, y_pred)
 
+                # Append metrics
                 metrics["Model"].append(model_name)
                 metrics["RMSE"].append(rmse)
                 metrics["MAE"].append(mae)
@@ -194,12 +205,20 @@ def show_model_comparison():
             except Exception as e:
                 st.error(f"Error with {model_name}: {e}")
 
+        # Display comparison
         metrics_df = pd.DataFrame(metrics)
         st.table(metrics_df)
 
+        # Visualize RMSE comparison
+        fig = go.Figure(data=[go.Bar(name='RMSE', x=metrics_df['Model'], y=metrics_df['RMSE']),
+                              go.Bar(name='MAE', x=metrics_df['Model'], y=metrics_df['MAE']),
+                              go.Bar(name='R² Score', x=metrics_df['Model'], y=metrics_df['R² Score'])])
+        fig.update_layout(title='Model Comparison Metrics', barmode='group')
+        st.plotly_chart(fig)
+
 def show_contact():
     st.header("Contact Information")
-    st.write("For inquiries, please reach out to [your_email@example.com].")
+    st.write("For any inquiries, please reach out to [your_email@example.com].")
 
 # ---- TRAIN RANDOM FOREST MODEL ----
 @st.cache_resource
@@ -210,11 +229,17 @@ def train_random_forest_model(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+    # Ensure no NaNs in training data
+    if X_train.isnull().values.any() or y_train.isnull().values.any():
+        st.error("Training data contains NaN values. Please clean your data.")
+        return None
+
     model.fit(X_train, y_train)
 
     return model, X_train, X_test, y_train, y_test
 
-# ---- RENDER PAGES ----
+# ---- RENDERING PAGES ----
 if st.session_state.page == 'home':
     show_home()
 elif st.session_state.page == 'prediction':
