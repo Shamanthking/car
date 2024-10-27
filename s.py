@@ -30,21 +30,22 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
-        
+
         # Check for missing values and handle them
         if df.isnull().sum().any():
             st.warning("Data contains missing values. Handling missing values...")
             df.fillna(0, inplace=True)  # Filling missing values with 0 or use appropriate method
-        
+
+        # Create car_age from model_year
         df['car_age'] = 2024 - df['model_year']
         df.drop(columns=['model_year'], inplace=True)
-        
+
         # One-Hot Encoding for categorical features
         categorical_cols = ['brand', 'fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
-        
+
         return df
-    
+
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
@@ -73,10 +74,15 @@ def show_home():
 def show_prediction():
     st.header("Car Price Prediction")
 
-    # Load data and train model
+    # Load data
     df = load_data()
     if df is not None:
-        model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
+        # Train Random Forest model
+        X = df.drop(columns=['price'])
+        y = df['price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
 
         # Prediction input fields
         brand = st.selectbox("Brand", sorted(df['brand'].unique()))
@@ -86,7 +92,7 @@ def show_prediction():
         max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
         mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
         engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        
+
         # Prepare input for prediction
         input_data = pd.DataFrame({
             'brand_' + brand: [1],  # One-hot encoding
@@ -94,8 +100,8 @@ def show_prediction():
             'km_driven': [km_driven],
             'Seats': [seats],
             'max_power': [max_power],
-            'mileage': [mileage],
-            'engine_cc': [engine_cc]
+            'milage': [mileage],
+            'engine': [engine_cc]
         })
 
         # Add missing columns for prediction
@@ -119,7 +125,6 @@ def show_analysis():
         # Brand Distribution
         st.subheader("Car Brand Distribution")
         brand_count = df['brand'].value_counts()
-        st.write("Brand counts:", brand_count)  # Debugging statement
         fig = px.bar(brand_count, x=brand_count.index, y=brand_count.values, labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
         st.plotly_chart(fig)
 
@@ -141,13 +146,12 @@ def show_analysis():
         # Transmission Breakdown
         st.subheader("Transmission Type Breakdown")
         transmission_count = df['transmission'].value_counts()
-        st.write("Transmission counts:", transmission_count)  # Debugging statement
         fig = px.pie(transmission_count, names=transmission_count.index, values=transmission_count.values, title="Transmission Type Distribution")
         st.plotly_chart(fig)
 
-        # Price vs. Mileage and Model Year
-        st.subheader("Price vs Mileage and Model Year")
-        fig = px.scatter(df, x="mileage", y="price", trendline="ols", title="Mileage vs. Price")
+        # Price vs. Mileage and Car Age
+        st.subheader("Price vs Mileage and Car Age")
+        fig = px.scatter(df, x="milage", y="price", trendline="ols", title="Mileage vs. Price")
         st.plotly_chart(fig)
         fig = px.scatter(df, x="car_age", y="price", trendline="ols", title="Car Age vs. Price")
         st.plotly_chart(fig)
@@ -165,7 +169,7 @@ def show_analysis():
 
         # Histograms for Numerical Columns
         st.subheader("Distribution of Numerical Features")
-        for column in ['price', 'mileage', 'car_age', 'engine_cc']:
+        for column in ['price', 'milage', 'car_age', 'engine']:
             fig = px.histogram(df, x=column, title=f"Distribution of {column.capitalize()}")
             st.plotly_chart(fig)
 
@@ -204,24 +208,13 @@ def show_model_comparison():
                 metrics["RMSE"].append(rmse)
                 metrics["MAE"].append(mae)
                 metrics["R² Score"].append(r2)
+
             except Exception as e:
-                st.error(f"Error with {model_name}: {e}")
+                st.error(f"Error training model {model_name}: {e}")
 
-        # Display comparison
+        # Display metrics as a DataFrame
         metrics_df = pd.DataFrame(metrics)
-        st.write(metrics_df)
-
-        # Bar chart for model performance
-        fig = go.Figure()
-        for metric in ['RMSE', 'MAE', 'R² Score']:
-            fig.add_trace(go.Bar(
-                x=metrics_df["Model"],
-                y=metrics_df[metric],
-                name=metric,
-                hoverinfo='y'
-            ))
-        fig.update_layout(title="Model Performance Comparison", barmode='group')
-        st.plotly_chart(fig)
+        st.dataframe(metrics_df)
 
 def show_contact():
     st.header("Contact Us")
@@ -231,7 +224,7 @@ def show_contact():
         - [Email](mailto:shamanth2626@gmail.com)
     """)
 
-# ---- PAGE RENDERING BASED ON SELECTION ----
+# ---- DISPLAY SELECTED PAGE ----
 if st.session_state.page == 'home':
     show_home()
 elif st.session_state.page == 'prediction':
@@ -242,3 +235,4 @@ elif st.session_state.page == 'model_comparison':
     show_model_comparison()
 elif st.session_state.page == 'contact':
     show_contact()
+
