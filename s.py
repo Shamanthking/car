@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -13,7 +15,7 @@ st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_
 page_bg_img = '''
 <style>
 .stApp {
-    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg"); /* Change this URL to a black car image */
+    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
@@ -28,13 +30,13 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 def load_data():
     """Loads and preprocesses the car dataset."""
     try:
-        df = pd.read_csv('data/CAR DETAILS FROM deekshith.csv', on_bad_lines='skip')
-        df['car_age'] = 2024 - df['year']
-        df.drop(columns=['year'], inplace=True)
+        df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
+        df['car_age'] = 2024 - df['model_year']
+        df.drop(columns=['model_year'], inplace=True)
 
         # Encoding categorical features
         encoder = OrdinalEncoder()
-        categorical_cols = ['fuel', 'seller_type', 'transmission', 'owner']
+        categorical_cols = ['fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
         df[categorical_cols] = encoder.fit_transform(df[categorical_cols])
         return df
     
@@ -44,7 +46,7 @@ def load_data():
 
 # ---- INITIALIZE SESSION STATE FOR PAGE TRACKING ----
 if 'page' not in st.session_state:
-    st.session_state.page = 'home'  # Default page is home
+    st.session_state.page = 'home'
 
 # Function to switch page
 def switch_page(page_name):
@@ -72,6 +74,7 @@ def show_prediction():
         model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
 
         # Prediction input fields
+        brand = st.selectbox("Brand", sorted(df['brand'].unique()))
         car_age = st.slider("Car Age", 0, 20, 10)
         km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
         seats = st.selectbox("Seats", [2, 4, 5, 7])
@@ -81,6 +84,7 @@ def show_prediction():
         
         # Prepare input for prediction
         input_data = pd.DataFrame({
+            'brand': [brand],
             'car_age': [car_age],
             'km_driven': [km_driven],
             'Seats': [seats],
@@ -89,7 +93,7 @@ def show_prediction():
             'engine_cc': [engine_cc]
         })
 
-        # Add any missing columns for prediction
+        # Add missing columns for prediction
         missing_cols = set(X_train.columns) - set(input_data.columns)
         for col in missing_cols:
             input_data[col] = 0
@@ -99,55 +103,105 @@ def show_prediction():
         prediction = model.predict(input_data)
         st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
 
-
 def show_analysis():
-    st.header("Data Analysis")
+    st.header("Detailed Data Analysis")
     df = load_data()
 
     if df is not None:
-        st.write("Available columns in DataFrame:", df.columns)  # Debugging line
+        # Brand Distribution
+        st.subheader("Car Brand Distribution")
+        brand_count = df['brand'].value_counts()
+        fig = px.bar(brand_count, x=brand_count.index, y=brand_count.values, labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
+        st.plotly_chart(fig)
 
-    if df is not None:
-        # Bar charts for categorical variables
-        st.subheader("Bar Charts for Categorical Variables")
-        plot_bar_chart(df, 'name', 'Brand Distribution')
-        plot_bar_chart(df, 'fuel', 'Fuel Type Distribution')
-        plot_bar_chart(df, 'seller_type', 'Seller Type Distribution')
-        plot_bar_chart(df, 'owner', 'Owner Type Distribution')
-        plot_bar_chart(df, 'Seats', 'Seats Distribution')
+        # Accident History and Price Impact
+        st.subheader("Price Impact by Accident History")
+        fig = px.box(df, x="accident", y="price", title="Price Distribution by Accident History")
+        st.plotly_chart(fig)
 
-        # Histograms for numerical variables
-        st.subheader("Histograms for Numerical Variables")
-        plot_histogram(df, 'selling_price', 'Distribution of Selling Price')
-        plot_histogram(df, 'km_driven', 'Distribution of Kilometers Driven')
+        # Exterior and Interior Color Distribution
+        st.subheader("Top 10 Exterior and Interior Colors")
+        ext_color_counts = df['ext_col'].value_counts().nlargest(10)
+        fig = px.bar(ext_color_counts, x=ext_color_counts.index, y=ext_color_counts.values, title="Top 10 Exterior Colors")
+        st.plotly_chart(fig)
+        
+        int_color_counts = df['int_col'].value_counts().nlargest(10)
+        fig = px.bar(int_color_counts, x=int_color_counts.index, y=int_color_counts.values, title="Top 10 Interior Colors")
+        st.plotly_chart(fig)
 
-        # Correlation heatmap
+        # Transmission Breakdown
+        st.subheader("Transmission Type Breakdown")
+        transmission_count = df['transmission'].value_counts()
+        fig = px.pie(transmission_count, names=transmission_count.index, values=transmission_count.values, title="Transmission Type Distribution")
+        st.plotly_chart(fig)
+
+        # Price vs. Mileage and Model Year
+        st.subheader("Price vs Mileage and Model Year")
+        fig = px.scatter(df, x="milage", y="price", trendline="ols", title="Mileage vs. Price")
+        st.plotly_chart(fig)
+        fig = px.scatter(df, x="car_age", y="price", trendline="ols", title="Car Age vs. Price")
+        st.plotly_chart(fig)
+
+        # Brand Price Variations
+        st.subheader("Price Variations by Brand")
+        fig = px.violin(df, x="brand", y="price", box=True, title="Price Distribution by Brand")
+        st.plotly_chart(fig)
+
+        # Correlation Heatmap
         st.subheader("Feature Correlation Heatmap")
-        plot_correlation_heatmap(df)
+        correlation_matrix = df.corr()
+        fig = px.imshow(correlation_matrix, text_auto=True, color_continuous_scale="RdBu", title="Feature Correlation Heatmap")
+        st.plotly_chart(fig)
+
+        # Histograms for Numerical Columns
+        st.subheader("Distribution of Numerical Features")
+        for column in ['price', 'milage', 'car_age', 'engine_cc']:
+            fig = px.histogram(df, x=column, title=f"Distribution of {column.capitalize()}")
+            st.plotly_chart(fig)
 
 def show_model_comparison():
     st.header("Model Comparison")
     st.write("Compare model performance metrics on training and test datasets.")
     
-    # Display performance metrics for models
-    metrics = {
-        "Model": ["Linear Regression", "Random Forest", "Gradient Boosting"],
-        "RMSE": ["430,074", "391,002", "398,905"],
-        "MAE": ["222,189", "169,276", "175,633"],
-        "R² Score": [0.81, 0.80, 0.84],
-    }
-    
-    metrics_df = pd.DataFrame(metrics)
-    st.table(metrics_df)
-
-    # Load data for additional plots
+    # Load data and split
     df = load_data()
-    
     if df is not None:
-        model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
-        plot_rf_scatter(X_train, X_test, y_train, y_test)
-        plot_feature_importance(model, X_train, y_train)
-        plot_gbm_loss(GradientBoostingRegressor(n_estimators=100, random_state=42), X_train, y_train)
+        X = df.drop(columns=['price'])
+        y = df['price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Models to compare
+        models = {
+            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42)
+        }
+
+        # Dictionary to store metrics
+        metrics = {"Model": [], "RMSE": [], "MAE": [], "R² Score": []}
+
+        for model_name, model in models.items():
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+
+            # Calculate metrics
+            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+            mae = mean_absolute_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+
+            # Store metrics
+            metrics["Model"].append(model_name)
+            metrics["RMSE"].append(f"{rmse:,.2f}")
+            metrics["MAE"].append(f"{mae:,.2f}")
+            metrics["R² Score"].append(f"{r2:.2f}")
+
+        # Display metrics in a table
+        metrics_df = pd.DataFrame(metrics)
+        st.table(metrics_df)
+
+        # Plot Random Forest Scatter and Feature Importance
+        rf_model = models["Random Forest"]
+        plot_rf_scatter(X_train, X_test, y_train, y_test, rf_model)
+        plot_feature_importance(rf_model, X_train, y_train)
 
 def show_contact():
     st.header("Contact Us")
@@ -160,44 +214,15 @@ def show_contact():
 # ---- HELPER FUNCTIONS ----
 def train_random_forest_model(df):
     """Trains a Random Forest model on the data."""
-    X = df.drop(columns=['selling_price', 'name'])
-    y = df['selling_price']
+    X = df.drop(columns=['price', 'brand'])
+    y = df['price']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     return model, X_train, X_test, y_train, y_test
 
-def plot_bar_chart(df, column, title):
-    """Plots a bar chart for a specified column."""
-    if column in df.columns:
-        counts = df[column].value_counts()
-        fig = px.bar(counts, x=counts.index, y=counts.values, labels={'x': column, 'y': 'Count'}, title=title)
-        st.plotly_chart(fig)
-    else:
-        st.warning(f"Column '{column}' not found in DataFrame.")
-
-
-def plot_histogram(df, column, title):
-    """Plots a histogram for a specified column."""
-    fig = px.histogram(df, x=column, title=title, color_discrete_sequence=['#636EFA'])
-    st.plotly_chart(fig)
-
-def plot_correlation_heatmap(df):
-    """Plots a correlation heatmap of numeric columns."""
-    # Select only numeric columns
-    numeric_df = df.select_dtypes(include=['float64', 'int64'])
-
-    if not numeric_df.empty:
-        corr_matrix = numeric_df.corr()
-        fig = px.imshow(corr_matrix, text_auto=True, title="Feature Correlation Heatmap", color_continuous_scale="RdBu")
-        st.plotly_chart(fig)
-    else:
-        st.warning("No numeric columns available for correlation heatmap.")
-
-
-def plot_rf_scatter(X_train, X_test, y_train, y_test):
+def plot_rf_scatter(X_train, X_test, y_train, y_test, model):
     """Scatter plot of predicted vs. actual values for Random Forest."""
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
     fig = go.Figure()
@@ -211,14 +236,6 @@ def plot_feature_importance(model, X_train, y_train):
     model.fit(X_train, y_train)
     importance_df = pd.DataFrame({"Feature": X_train.columns, "Importance": model.feature_importances_}).sort_values(by="Importance", ascending=False)
     fig = px.bar(importance_df, x="Importance", y="Feature", title="Feature Importances", orientation="h", color="Importance")
-    st.plotly_chart(fig)
-
-def plot_gbm_loss(model, X_train, y_train):
-    """Plots loss function for Gradient Boosting."""
-    model.fit(X_train, y_train)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(y=model.train_score_, mode='lines', name='Training Loss'))
-    fig.update_layout(title="GBM Loss Function vs Number of Trees", xaxis_title="Number of Trees", yaxis_title="Loss")
     st.plotly_chart(fig)
 
 # ---- MAIN SECTION ----
