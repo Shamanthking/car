@@ -1,112 +1,148 @@
 # Car Price Prediction & Analysis Dashboard 🚗
 
-Welcome to the **Car Price Prediction & Analysis Dashboard**! This Streamlit-powered app helps users predict car prices based on various features and explore data insights interactively.
 
-## Overview
-This dashboard application offers:
-- Predictions on car prices using machine learning.
-- Data analysis with various visualizations.
-- Easy-to-navigate pages: **Home**, **Predict**, **Analysis**, and **Contact**.
+
+#streamlit link********"https://q8pptv2nhseudi6hdkzzc3.streamlit.app/?page=Predict"*********
+
+
+
+This **Car Price Prediction & Analysis Dashboard** is a Streamlit application designed for analyzing and predicting car prices using machine learning models. It provides various functionalities such as data visualization, model training, and prediction, along with an intuitive navigation system.
 
 ## Features
-- **Prediction Model**: Predicts car prices based on age, mileage, engine capacity, and more.
-- **Interactive Analysis**: Visualizations like scatter plots, pie charts, and heatmaps for exploring car features and pricing trends.
-- **Data Filtering**: Filter data by brand, year, fuel type, and more for focused analysis.
+
+- **Home Page**: A brief introduction to the app’s purpose and capabilities.
+- **Prediction**: Allows users to input various car features and get a predicted selling price.
+- **Data Analysis**: Visualizes data through bar charts, histograms, and a correlation heatmap for better insights into the features affecting car price.
+- **Model Comparison**: Shows a performance comparison of different models, including metrics like RMSE, MAE, and R² score.
+- **Contact**: Links for contacting the creator via LinkedIn, Instagram, and email.
+
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [App Pages](#app-pages)
+4. [Helper Functions](#helper-functions)
+5. [Dependencies](#dependencies)
+6. [Contact](#contact)
+
+---
 
 ## Installation
 
-1. **Clone the repository**:
+1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/car-price-prediction-dashboard.git
-   cd car-price-prediction-dashboard
+   git clone https://github.com/your-repository-url.git
+   cd your-repository-folder
    ```
 
-2. **Create a virtual environment** (optional but recommended):
-   ```bash
-   python3 -m venv env
-   source env/bin/activate  # On Windows use `env\Scripts\activate`
-   ```
-
-3. **Install dependencies**:
+2. **Install the Required Packages**:
+   Ensure Python is installed and run:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Getting Started
-
-1. Place the dataset file (`car_data.csv`) in the `data` folder.
-2. Run the Streamlit application:
+3. **Run the App**:
    ```bash
    streamlit run app.py
    ```
-3. Open your browser to [http://localhost:8501](http://localhost:8501) to access the dashboard.
+
+---
 
 ## Usage
 
-The app has the following sections:
-1. **Home**: An overview of the app's features.
-2. **Predict**: Make car price predictions based on user inputs.
-3. **Analysis**: Explore data insights with interactive visualizations.
-4. **Contact**: Get in touch with us via LinkedIn, Instagram, or email.
+To run the dashboard, execute `streamlit run app.py` in your terminal, and open the app in the provided local server URL. You can interact with the sidebar to navigate between different sections of the dashboard, explore data insights, and make predictions.
 
-## Interacting with Git
+---
 
-### Setting Up a New Branch
+## App Pages
 
-To work on a new feature or make modifications, create a new branch:
-```bash
-git checkout -b feature-branch-name
+### Home Page
+The **Home** page provides an overview of the application’s purpose, focusing on car price prediction and data analysis.
 
+### Prediction
+The **Prediction** page enables users to predict car prices by inputting various car attributes such as:
 
-### Committing Changes
+- Car age
+- Kilometers driven
+- Number of seats
+- Maximum power
+- Mileage
+- Engine capacity
 
-Follow best practices when committing changes:
-1. **Stage files** you want to include:
-   ```bash
-   git add <file_name>
-   
-2. **Commit** with a clear message:
-   ```bash
-   git commit -m "Add feature description"
-   
+It uses a pre-trained Random Forest Regressor model to predict the car price based on the input values.
 
-### Syncing with Remote Repository
+### Data Analysis
+The **Data Analysis** page allows users to visualize the dataset. It includes:
 
-Keep your fork in sync with the main repository:
-1. **Fetch** the latest updates:
-   ```bash
-   git fetch origin
-   
-2. **Merge** updates into your branch:
-   ```bash
-   git merge origin/main
-  
+- **Bar Charts**: For categorical variables like car brand, fuel type, seller type, etc.
+- **Histograms**: For continuous variables like selling price and kilometers driven.
+- **Correlation Heatmap**: For understanding relationships between different numeric features.
 
-### Pushing Changes
+### Model Comparison
+The **Model Comparison** page presents a comparison table of various models (Linear Regression, Random Forest, and Gradient Boosting) with their performance metrics (RMSE, MAE, and R² score). 
 
-Push your branch to GitHub:
-```bash
-git push origin feature-branch-name
+This section also includes:
+- A **scatter plot** of predicted vs. actual values for Random Forest.
+- A **feature importance plot** for the Random Forest model.
+- A **loss function plot** for Gradient Boosting.
 
+### Contact
+The **Contact** page provides links to the creator's social profiles and email for feedback or inquiries.
 
-After pushing, open a **Pull Request** on GitHub to merge your changes.
+---
 
-## Contributing
+## Helper Functions
 
-We welcome contributions to improve this project! Please follow these steps to contribute:
-1. Fork the repository.
-2. Create a new branch with a descriptive name.
-3. Make your changes and commit them.
-4. Push your branch and open a Pull Request.
+### `load_data()`
+Loads and preprocesses the car dataset, including encoding categorical features and computing car age.
 
+### `train_random_forest_model()`
+Trains a Random Forest model on the preprocessed data.
 
+### `plot_bar_chart()`
+Plots bar charts for categorical columns to visualize their distribution.
+
+### `plot_histogram()`
+Plots histograms for numerical columns to show data distribution.
+
+### `plot_correlation_heatmap()`
+Displays a heatmap of feature correlations within the dataset.
+
+### `plot_rf_scatter()`
+Plots predicted vs. actual values for the Random Forest model on the test data.
+
+### `plot_feature_importance()`
+Plots feature importance values for the Random Forest model.
+
+### `plot_gbm_loss()`
+Shows a loss function plot for the Gradient Boosting model to illustrate model training over the number of trees.
+
+---
+
+## Dependencies
+
+This application uses the following libraries:
+
+- **Streamlit**: For building the web application interface
+- **pandas**: For data loading and preprocessing
+- **scikit-learn**: For machine learning models and data splitting
+- **plotly**: For interactive data visualizations
+
+Install dependencies from the `requirements.txt` file.
+
+---
 
 ## Contact
 
-For support or inquiries:
-- LinkedIn: [Shamanth M](https://www.linkedin.com/in/shamanth-m-05537b264)
-- Instagram: [@shamanth_m_](https://www.instagram.com/shamanth_m_/)
-- Email: [shamanth2626@gmail.com](mailto:shamanth2626@gmail.com)
+- **LinkedIn**: [LinkedIn Profile](https://www.linkedin.com/in/shamanth-m-05537b264)
+- **Instagram**: [Instagram Profile](https://www.instagram.com/shamanth_m_)
+- **Email**: [Email Me](mailto:shamanth2626@gmail.com)
+
+---
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
 
 
 
