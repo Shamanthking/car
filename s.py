@@ -31,6 +31,12 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
+        
+        # Check for missing values and handle them
+        if df.isnull().sum().any():
+            st.warning("Data contains missing values. Handling missing values...")
+            df.fillna(0, inplace=True)  # Filling missing values with 0 or use appropriate method
+
         df['car_age'] = 2024 - df['model_year']
         df.drop(columns=['model_year'], inplace=True)
 
@@ -100,8 +106,11 @@ def show_prediction():
         input_data = input_data[X_train.columns]
 
         # Prediction
-        prediction = model.predict(input_data)
-        st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
+        try:
+            prediction = model.predict(input_data)
+            st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f}")
+        except Exception as e:
+            st.error(f"Prediction error: {e}")
 
 def show_analysis():
     st.header("Detailed Data Analysis")
@@ -180,36 +189,39 @@ def show_model_comparison():
         metrics = {"Model": [], "RMSE": [], "MAE": [], "R² Score": []}
 
         for model_name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
+            try:
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
 
-            # Calculate metrics
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-            mae = mean_absolute_error(y_test, y_pred)
-            r2 = r2_score(y_test, y_pred)
+                # Calculate metrics
+                rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                mae = mean_absolute_error(y_test, y_pred)
+                r2 = r2_score(y_test, y_pred)
 
-            # Store metrics
-            metrics["Model"].append(model_name)
-            metrics["RMSE"].append(f"{rmse:,.2f}")
-            metrics["MAE"].append(f"{mae:,.2f}")
-            metrics["R² Score"].append(f"{r2:.2f}")
+                # Store metrics
+                metrics["Model"].append(model_name)
+                metrics["RMSE"].append(rmse)
+                metrics["MAE"].append(mae)
+                metrics["R² Score"].append(r2)
+            except Exception as e:
+                st.error(f"Error with {model_name}: {e}")
 
-        # Display metrics in a table
+        # Display comparison
         metrics_df = pd.DataFrame(metrics)
         st.table(metrics_df)
 
-        # Plot Random Forest Scatter and Feature Importance
-        rf_model = models["Random Forest"]
-        plot_rf_scatter(X_train, X_test, y_train, y_test, rf_model)
-        plot_feature_importance(rf_model, X_train, y_train)
+        # Visualize RMSE comparison
+        fig = go.Figure(data=[
+            go.Bar(name='RMSE', x=metrics_df['Model'], y=metrics_df['RMSE']),
+            go.Bar(name='MAE', x=metrics_df['Model'], y=metrics_df['MAE']),
+            go.Bar(name='R² Score', x=metrics_df['Model'], y=metrics_df['R² Score']),
+        ])
+        fig.update_layout(title='Model Comparison Metrics', barmode='group')
+        st.plotly_chart(fig)
 
 def show_contact():
-    st.header("Contact Us")
-    st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
-        - [Instagram](https://www.instagram.com/shamanth_m_)
-        - [GitHub](https://github.com/shamanth22)
-    """)
+    st.header("Contact Information")
+    st.write("For any inquiries, please reach out to [your_email@example.com].")
 
 # ---- TRAIN RANDOM FOREST MODEL ----
 @st.cache_resource
@@ -220,35 +232,15 @@ def train_random_forest_model(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     model = RandomForestRegressor(n_estimators=100, random_state=42)
+    
+    # Ensure no NaNs in training data
+    if X_train.isnull().values.any() or y_train.isnull().values.any():
+        st.error("Training data contains NaN values. Please clean your data.")
+        return None
+
     model.fit(X_train, y_train)
 
     return model, X_train, X_test, y_train, y_test
-
-# ---- PLOTTING FUNCTIONS ----
-def plot_rf_scatter(X_train, X_test, y_train, y_test, model):
-    """Plots scatter of predicted vs actual values for Random Forest."""
-    y_train_pred = model.predict(X_train)
-    y_test_pred = model.predict(X_test)
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=y_train, y=y_train_pred, mode='markers', name='Train Data', marker=dict(color='blue', alpha=0.5)))
-    fig.add_trace(go.Scatter(x=y_test, y=y_test_pred, mode='markers', name='Test Data', marker=dict(color='red', alpha=0.5)))
-    
-    fig.add_trace(go.Scatter(x=[min(y_test), max(y_test)], y=[min(y_test), max(y_test)], mode='lines', name='Ideal Prediction', line=dict(color='black', dash='dash')))
-    
-    fig.update_layout(title='Predicted vs Actual Prices (Random Forest)', xaxis_title='Actual Price', yaxis_title='Predicted Price')
-    st.plotly_chart(fig)
-
-def plot_feature_importance(model, X_train, y_train):
-    """Plots feature importance for the model."""
-    importances = model.feature_importances_
-    feature_names = X_train.columns
-    indices = np.argsort(importances)[::-1]
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=importances[indices], y=feature_names[indices], orientation='h'))
-    fig.update_layout(title='Feature Importance', xaxis_title='Importance', yaxis_title='Features')
-    st.plotly_chart(fig)
 
 # ---- RENDERING PAGES ----
 if st.session_state.page == 'home':
