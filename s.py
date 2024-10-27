@@ -100,7 +100,7 @@ def show_prediction():
             'km_driven': [km_driven],
             'Seats': [seats],
             'max_power': [max_power],
-            'milage': [mileage],
+            'milage': [milage],
             'engine': [engine_cc]
         })
 
