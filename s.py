@@ -32,14 +32,19 @@ def load_data():
     try:
         df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
         df['car_age'] = 2024 - df['model_year']
-        df.drop(columns=['model_year'], inplace=True)
-
-        # Encoding categorical features
+        
+        # Drop rows with missing target variable
+        df.dropna(subset=['price'], inplace=True)
+        
+        # Convert all columns to numeric if possible, and encode categorical features
         encoder = OrdinalEncoder()
         categorical_cols = ['fuel_type', 'transmission', 'ext_col', 'int_col', 'accident', 'clean_title']
+        for col in categorical_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str)
         df[categorical_cols] = encoder.fit_transform(df[categorical_cols])
         return df
-    
+
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
@@ -74,7 +79,6 @@ def show_prediction():
         model, X_train, X_test, y_train, y_test = train_random_forest_model(df)
 
         # Prediction input fields
-        brand = st.selectbox("Brand", sorted(df['brand'].unique()))
         car_age = st.slider("Car Age", 0, 20, 10)
         km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
         seats = st.selectbox("Seats", [2, 4, 5, 7])
@@ -84,7 +88,6 @@ def show_prediction():
         
         # Prepare input for prediction
         input_data = pd.DataFrame({
-            'brand': [brand],
             'car_age': [car_age],
             'km_driven': [km_driven],
             'Seats': [seats],
@@ -137,8 +140,9 @@ def show_analysis():
 
         # Price vs. Mileage and Model Year
         st.subheader("Price vs Mileage and Model Year")
-        fig = px.scatter(df, x="milage", y="price", trendline="ols", title="Mileage vs. Price")
-        st.plotly_chart(fig)
+        if 'milage' in df.columns:
+            fig = px.scatter(df, x="milage", y="price", trendline="ols", title="Mileage vs. Price")
+            st.plotly_chart(fig)
         fig = px.scatter(df, x="car_age", y="price", trendline="ols", title="Car Age vs. Price")
         st.plotly_chart(fig)
 
@@ -156,8 +160,9 @@ def show_analysis():
         # Histograms for Numerical Columns
         st.subheader("Distribution of Numerical Features")
         for column in ['price', 'milage', 'car_age', 'engine_cc']:
-            fig = px.histogram(df, x=column, title=f"Distribution of {column.capitalize()}")
-            st.plotly_chart(fig)
+            if column in df.columns:
+                fig = px.histogram(df, x=column, title=f"Distribution of {column.capitalize()}")
+                st.plotly_chart(fig)
 
 def show_model_comparison():
     st.header("Model Comparison")
@@ -201,51 +206,4 @@ def show_model_comparison():
         # Plot Random Forest Scatter and Feature Importance
         rf_model = models["Random Forest"]
         plot_rf_scatter(X_train, X_test, y_train, y_test, rf_model)
-        plot_feature_importance(rf_model, X_train, y_train)
-
-def show_contact():
-    st.header("Contact Us")
-    st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
-        - [Instagram](https://www.instagram.com/shamanth_m_)
-        - [Email](mailto:shamanth2626@gmail.com)
-    """)
-
-# ---- HELPER FUNCTIONS ----
-def train_random_forest_model(df):
-    """Trains a Random Forest model on the data."""
-    X = df.drop(columns=['price', 'brand'])
-    y = df['price']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-    return model, X_train, X_test, y_train, y_test
-
-def plot_rf_scatter(X_train, X_test, y_train, y_test, model):
-    """Scatter plot of predicted vs. actual values for Random Forest."""
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs. Actual'))
-    fig.add_trace(go.Scatter(x=y_test, y=y_test, mode='lines', name='Ideal Line'))
-    fig.update_layout(title="RF: Predicted vs. Actual Prices", xaxis_title="Actual", yaxis_title="Predicted")
-    st.plotly_chart(fig)
-
-def plot_feature_importance(model, X_train, y_train):
-    """Feature importance plot for Random Forest."""
-    model.fit(X_train, y_train)
-    importance_df = pd.DataFrame({"Feature": X_train.columns, "Importance": model.feature_importances_}).sort_values(by="Importance", ascending=False)
-    fig = px.bar(importance_df, x="Importance", y="Feature", title="Feature Importances", orientation="h", color="Importance")
-    st.plotly_chart(fig)
-
-# ---- MAIN SECTION ----
-if st.session_state.page == 'home':
-    show_home()
-elif st.session_state.page == 'prediction':
-    show_prediction()
-elif st.session_state.page == 'analysis':
-    show_analysis()
-elif st.session_state.page == 'model_comparison':
-    show_model_comparison()
-elif st.session_state.page == 'contact':
-    show_contact()
+        plot_feature_import
