@@ -31,9 +31,11 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
 @st.cache_data
-def load_data(file_path):
+def load_data():
     """Loads and preprocesses the car dataset."""
     try:
+        # Specify the fixed path to the dataset file
+        file_path = '.csv'  # Replace with the actual path in your Git directory
         df = pd.read_csv(file_path, on_bad_lines='skip')
 
         # Impute missing values
