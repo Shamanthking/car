@@ -31,24 +31,33 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
 @st.cache_data
-def load_data():
-    """Loads and preprocesses the car dataset."""
+def load_data(uploaded_file=None):
+    """Loads and preprocesses the car dataset, either from uploaded file or fallback path."""
     try:
         # Specify the fixed path to the dataset file
-        file_path = 'data/used_cars.csv'  # replace with the actual path in your Git directory or local environment
-        df = pd.read_csv(file_path, on_bad_lines='skip')
+        file_path = 'data/used_cars.csv'
+        
+        # Load data from the uploaded file if present; otherwise, use the fixed file path
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
+        else:
+            df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
 
         # Impute missing values
         imputer = SimpleImputer(strategy="mean")
-        df.fillna(df.mean(), inplace=True)
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
 
         # Feature Engineering - derive car age if model_year available
         if 'model_year' in df.columns:
             df['car_age'] = 2024 - df['model_year']
             df.drop(columns=['model_year'], inplace=True)
 
-        # One-hot encoding for categorical columns
+        # Handle categorical data
         categorical_cols = ['brand', 'fuel_type', 'transmission_type', 'seller_type']
+        for col in categorical_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str)
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
         return df
@@ -75,10 +84,10 @@ def show_home():
     st.title("Car Price Prediction & Analysis")
     st.subheader("Get predictions and insights into car price data with multiple model comparisons.")
 
-def show_prediction():
+def show_prediction(uploaded_file=None):
     st.header("Car Price Prediction")
 
-    df = load_data()
+    df = load_data(uploaded_file)
     if df is not None:
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -101,10 +110,10 @@ def show_prediction():
             st.write(f"{model_name}:")
             st.write(f"MSE: {mse:.2f}, RMSE: {rmse:.2f}, R²: {r2:.2f}")
 
-def show_analysis():
+def show_analysis(uploaded_file=None):
     st.header("Detailed Data Analysis")
 
-    df = load_data()
+    df = load_data(uploaded_file)
     if df is not None:
         # 1. Bar Plot for Brand Distribution
         st.subheader("Brand Distribution")
@@ -150,11 +159,11 @@ def show_analysis():
         fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
         st.plotly_chart(fig)
 
-def show_model_comparison():
+def show_model_comparison(uploaded_file=None):
     st.header("Model Comparison")
     st.write("Compare model performance metrics on test dataset.")
 
-    df = load_data()
+    df = load_data(uploaded_file)
     if df is not None:
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -194,13 +203,15 @@ def show_contact():
     """)
 
 # ---- DISPLAY SELECTED PAGE ----
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+
 if st.session_state.page == 'home':
     show_home()
 elif st.session_state.page == 'prediction':
-    show_prediction()
+    show_prediction(uploaded_file)
 elif st.session_state.page == 'analysis':
-    show_analysis()
+    show_analysis(uploaded_file)
 elif st.session_state.page == 'model_comparison':
-    show_model_comparison()
+    show_model_comparison(uploaded_file)
 elif st.session_state.page == 'contact':
     show_contact()
