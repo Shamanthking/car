@@ -2,14 +2,18 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.impute import SimpleImputer
 import plotly.express as px
-import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # ---- PAGE CONFIGURATION ----
-st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon=":car:", layout="wide")
-
+st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon="🚗", layout="wide")
 # ---- CUSTOM CSS FOR BACKGROUND ----
 page_bg_img = '''
 <style>
@@ -21,48 +25,41 @@ page_bg_img = '''
     color: white;
 }
 </style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
-
 # ---- LOAD DATA ----
 @st.cache_data
-def load_data():
+def load_data(file_path):
     """Loads and preprocesses the car dataset."""
     try:
-        df = pd.read_csv('data/used_cars.csv', on_bad_lines='skip')
+        df = pd.read_csv(file_path)
 
-        # Check for missing values and handle them
-        if df.isnull().sum().any():
-            st.warning("Data contains missing values. Handling missing values...")
-            df.fillna(0, inplace=True)
+        # Impute missing values
+        imputer = SimpleImputer(strategy="mean")
+        df.fillna(df.mean(), inplace=True)
 
-        # Create car_age from Year and drop the original Year column
-        df['car_age'] = 2024 - df['Year']
-        df.drop(columns=['Year'], inplace=True)
+        # Feature Engineering - derive car age if model_year available
+        if 'model_year' in df.columns:
+            df['car_age'] = 2024 - df['model_year']
+            df.drop(columns=['model_year'], inplace=True)
 
-        # Rename target column
-        df.rename(columns={'Selling_Price': 'price', 'Present_Price': 'current_price',
-                           'Kms_Driven': 'km_driven'}, inplace=True)
-
-        # One-Hot Encoding for categorical features
-        categorical_cols = ['Car_Name', 'Fuel_Type', 'Seller_Type', 'Transmission']
+        # One-hot encoding for categorical columns
+        categorical_cols = ['brand', 'fuel_type', 'transmission_type', 'seller_type']
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
         return df
-
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
 
-# ---- INITIALIZE SESSION STATE FOR PAGE TRACKING ----
+# ---- FILE UPLOAD ----
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+
+# ---- SIDEBAR NAVIGATION ----
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
 
-# Function to switch page
 def switch_page(page_name):
     st.session_state.page = page_name
 
-# Sidebar Navigation buttons
 st.sidebar.title("Navigation")
 st.sidebar.button("Home", on_click=switch_page, args=('home',))
 st.sidebar.button("Prediction", on_click=switch_page, args=('prediction',))
@@ -72,74 +69,140 @@ st.sidebar.button("Contact", on_click=switch_page, args=('contact',))
 
 # ---- PAGE SECTIONS ----
 def show_home():
-    st.title("Car Price Prediction")
-    st.subheader("Get accurate predictions on car prices and explore data insights.")
+    st.title("Car Price Prediction & Analysis")
+    st.subheader("Get predictions and insights into car price data with multiple model comparisons.")
 
 def show_prediction():
     st.header("Car Price Prediction")
 
-    # Load data
-    df = load_data()
+    if uploaded_file:
+        df = load_data(uploaded_file)
+    else:
+        st.warning("Please upload a CSV file to use this section.")
+        return
+
     if df is not None:
-        # Train Random Forest model
-        X = df.drop(columns=['price'])
-        y = df['price']
+        X = df.drop(columns=['selling_price'])
+        y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
 
-        # Extract unique car names before one-hot encoding
-        unique_car_names = [col.split('_', 1)[-1] for col in df.columns if col.startswith("Car_Name_")]
+        models = {
+            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
+            "Linear Regression": LinearRegression(),
+            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
+            "Decision Tree": DecisionTreeRegressor(random_state=42)
+        }
 
-        # Prediction input fields
-        car_name = st.selectbox("Car Name", sorted(unique_car_names))
-        fuel_type = st.selectbox("Fuel Type", sorted(df['Fuel_Type_Petrol'].unique()))
-        seller_type = st.selectbox("Seller Type", sorted(df['Seller_Type_Individual'].unique()))
-        transmission = st.selectbox("Transmission", sorted(df['Transmission_Manual'].unique()))
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        current_price = st.number_input("Current Price (in Lakh)", 0.0, 50.0, 5.0)
-        owner = st.selectbox("Owner", [0, 1, 2, 3])
-
-        # Prepare input for prediction
-        input_data = pd.DataFrame({
-            f'Car_Name_{car_name}': [1],
-            f'Fuel_Type_Petrol' if fuel_type == "Petrol" else "Fuel_Type_Diesel": [1],
-            f'Seller_Type_Individual' if seller_type == "Individual" else "Seller_Type_Dealer": [1],
-            f'Transmission_Manual' if transmission == "Manual" else "Transmission_Automatic": [1],
-            'car_age': [car_age],
-            'km_driven': [km_driven],
-            'current_price': [current_price],
-            'Owner': [owner]
-        })
-
-        # Add missing columns for prediction
-        missing_cols = set(X_train.columns) - set(input_data.columns)
-        for col in missing_cols:
-            input_data[col] = 0
-        input_data = input_data[X_train.columns]
-
-        # Prediction
-        try:
-            prediction = model.predict(input_data)
-            st.write(f"Predicted Selling Price: ₹ {prediction[0]:,.2f} Lakh")
-        except Exception as e:
-            st.error(f"Prediction error: {e}")
+        for model_name, model in models.items():
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(y_test, y_pred)
+            st.write(f"{model_name}:")
+            st.write(f"MSE: {mse:.2f}, RMSE: {rmse:.2f}, R²: {r2:.2f}")
 
 def show_analysis():
-    # (Analysis code remains unchanged)
-    pass
+    st.header("Detailed Data Analysis")
+
+    if uploaded_file:
+        df = load_data(uploaded_file)
+    else:
+        st.warning("Please upload a CSV file to use this section.")
+        return
+
+    if df is not None:
+        # 1. Bar Plot for Brand Distribution
+        st.subheader("Brand Distribution")
+        brand_counts = df['brand'].value_counts()
+        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
+        st.plotly_chart(fig)
+
+        # 2. Pie Chart for Fuel Type Distribution
+        st.subheader("Fuel Type Distribution")
+        fuel_counts = df['fuel_type'].value_counts()
+        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, title="Fuel Type Distribution")
+        st.plotly_chart(fig)
+
+        # 3. Histogram of Car Prices
+        st.subheader("Distribution of Car Prices")
+        fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
+        st.plotly_chart(fig)
+
+        # 4. Box Plot for Price by Transmission Type
+        st.subheader("Price by Transmission Type")
+        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
+        st.plotly_chart(fig)
+
+        # 5. Scatter Plot - Price vs Mileage
+        st.subheader("Price vs Mileage")
+        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
+        st.plotly_chart(fig)
+
+        # 6. Heatmap of Correlation Matrix
+        st.subheader("Correlation Heatmap")
+        fig, ax = plt.subplots()
+        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
+
+        # 7. Line Plot - Average Price by Car Age
+        st.subheader("Average Price by Car Age")
+        age_price = df.groupby('car_age')['selling_price'].mean().reset_index()
+        fig = px.line(age_price, x='car_age', y='selling_price', title="Average Price by Car Age")
+        st.plotly_chart(fig)
+
+        # 8. Violin Plot for Price by Seller Type
+        st.subheader("Price by Seller Type")
+        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
+        st.plotly_chart(fig)
 
 def show_model_comparison():
-    # (Model comparison code remains unchanged)
-    pass
+    st.header("Model Comparison")
+    st.write("Compare model performance metrics on test dataset.")
+
+    if uploaded_file:
+        df = load_data(uploaded_file)
+    else:
+        st.warning("Please upload a CSV file to use this section.")
+        return
+
+    if df is not None:
+        X = df.drop(columns=['selling_price'])
+        y = df['selling_price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        models = {
+            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
+            "Linear Regression": LinearRegression(),
+            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
+            "Decision Tree": DecisionTreeRegressor(random_state=42)
+        }
+
+        metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
+
+        for model_name, model in models.items():
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(y_test, y_pred)
+
+            metrics["Model"].append(model_name)
+            metrics["MSE"].append(mse)
+            metrics["RMSE"].append(rmse)
+            metrics["R²"].append(r2)
+
+        metrics_df = pd.DataFrame(metrics)
+        st.dataframe(metrics_df)
 
 def show_contact():
     st.header("Contact Us")
     st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
-        - [Instagram](https://www.instagram.com/shamanth_m_)
-        - [Email](mailto:shamanth2626@gmail.com)
+        - 📧 Email: [your.email@example.com](mailto:your.email@example.com)
+        - 🔗 [LinkedIn](https://www.linkedin.com/in/your-profile/)
+        - 📷 [Instagram](https://www.instagram.com/your-profile/)
     """)
 
 # ---- DISPLAY SELECTED PAGE ----
