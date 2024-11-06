@@ -87,7 +87,7 @@ def show_prediction():
         })
 
         # One-hot encoding for the categorical features
-        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission], 'owner_type': [owner_type]})
+        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
         categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
         user_data = pd.concat([user_data, categorical_encoded], axis=1)
         user_data = user_data.reindex(columns=X.columns, fill_value=0)
