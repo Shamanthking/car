@@ -25,6 +25,8 @@ page_bg_img = '''
     color: white;
 }
 </style>
+'''
+st.markdown(page_bg_img, unsafe_allow_html=True)
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data(file_path):
