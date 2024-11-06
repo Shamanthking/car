@@ -115,6 +115,33 @@ def show_analysis():
         st.subheader("Distribution of Car Prices")
         fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
         st.plotly_chart(fig)
+                # 4. Box Plot for Price by Transmission Type
+        st.subheader("Price by Transmission Type")
+        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
+        st.plotly_chart(fig)
+
+        # 5. Scatter Plot - Price vs Mileage
+        st.subheader("Price vs Mileage")
+        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
+        st.plotly_chart(fig)
+
+        # 6. Heatmap of Correlation Matrix
+        st.subheader("Correlation Heatmap")
+        fig, ax = plt.subplots()
+        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
+
+        # 7. Line Plot - Average Price by Car Age
+        st.subheader("Average Price by Car Age")
+        if 'vehicle_age' in df.columns:
+            age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
+            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age")
+            st.plotly_chart(fig)
+
+        # 8. Violin Plot for Price by Seller Type
+        st.subheader("Price by Seller Type")
+        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
+        st.plotly_chart(fig)
 
 # ---- MODEL COMPARISON ----
 def show_model_comparison():
