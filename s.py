@@ -35,7 +35,7 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         # Specify the fixed path to the dataset file
-        file_path = '.csv'  # Replace with the actual path in your Git directory
+        file_path = 'data/used_cars.csv'  # give path of ur actual path in git or local env file path
         df = pd.read_csv(file_path, on_bad_lines='skip')
 
         # Impute missing values
@@ -55,9 +55,6 @@ def load_data():
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
-
-# ---- FILE UPLOAD ----
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
 # ---- SIDEBAR NAVIGATION ----
 if 'page' not in st.session_state:
