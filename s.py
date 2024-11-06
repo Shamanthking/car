@@ -30,7 +30,7 @@ page_bg_img = '''
 def load_data(file_path):
     """Loads and preprocesses the car dataset."""
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, on_bad_lines='skip)
 
         # Impute missing values
         imputer = SimpleImputer(strategy="mean")
