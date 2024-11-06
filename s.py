@@ -70,7 +70,7 @@ def show_prediction():
         fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
         seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
-        owner_type = st.selectbox("Owner Type", ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'])
+       
 
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -83,7 +83,7 @@ def show_prediction():
             'max_power': [max_power],
             'mileage': [mileage],
             'engine_cc': [engine_cc],
-            'number_of_owners': [int(owner_type.split()[0]) if owner_type != 'Test Drive Car' else 0]
+           
         })
 
         # One-hot encoding for the categorical features
