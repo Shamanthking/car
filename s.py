@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon="🚗", layout="wide")
+
 # ---- CUSTOM CSS FOR BACKGROUND ----
 page_bg_img = '''
 <style>
@@ -27,6 +28,7 @@ page_bg_img = '''
 </style>
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
+
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data(file_path):
@@ -202,9 +204,9 @@ def show_model_comparison():
 def show_contact():
     st.header("Contact Us")
     st.markdown("""
-        - 📧 Email: [your.email@example.com](mailto:your.email@example.com)
-        - 🔗 [LinkedIn](https://www.linkedin.com/in/your-profile/)
-        - 📷 [Instagram](https://www.instagram.com/your-profile/)
+        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
+        - [Instagram](https://www.instagram.com/shamanth_m_)
+        - [Email](mailto:shamanth2626@gmail.com)
     """)
 
 # ---- DISPLAY SELECTED PAGE ----
