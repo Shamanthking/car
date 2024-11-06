@@ -36,20 +36,16 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 def load_data():
     """Loads and preprocesses the car dataset from a fixed path."""
     try:
-        # Specify the fixed path to the dataset file
         file_path = 'data/carr.csv'
-        
-        # Load data from the dataset file
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
-        # Standardize column names
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-        
-        # Handle categorical data
+
+        # Encode categorical features
         cat_cols = df.select_dtypes(include=['object']).columns
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-        
-        # Impute missing values for numeric columns
+
+        # Impute missing values
         imputer = SimpleImputer(strategy="mean")
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
@@ -59,96 +55,70 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return None
 
-# ---- PAGE SECTIONS ----
-def show_home():
-    st.title("Car Price Prediction & Analysis")
-    st.subheader("Get predictions and insights into car price data with multiple model comparisons.")
-
+# ---- PREDICTION PAGE ----
 def show_prediction():
     st.header("Car Price Prediction")
-
     df = load_data()
     if df is not None:
-        # Define feature columns and target variable
+        car_age = st.slider("Car Age", 0, 20, 10)
+        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+        seats = st.selectbox("Seats", [2, 4, 5, 7])
+        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+        brand = st.selectbox("Brand", df['brand'].unique())
+        fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
+        seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
+        transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
+        owner_type = st.selectbox("Owner Type", ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'])
+
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
-
-        # Train-test split
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Define models
-        models = {
-            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
-            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "Linear Regression": LinearRegression(),
-            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
-            "Decision Tree": DecisionTreeRegressor(random_state=42)
-        }
+        user_data = pd.DataFrame({
+            'car_age': [car_age],
+            'km_driven': [km_driven],
+            'seats': [seats],
+            'max_power': [max_power],
+            'mileage': [mileage],
+            'engine_cc': [engine_cc],
+            'number_of_owners': [int(owner_type.split()[0]) if owner_type != 'Test Drive Car' else 0]
+        })
 
-        # Model training and evaluation
-        for model_name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
-            st.write(f"{model_name}:")
-            st.write(f"MSE: {mse:.2f}, RMSE: {rmse:.2f}, R²: {r2:.2f}")
+        # One-hot encoding for the categorical features
+        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission], 'owner_type': [owner_type]})
+        categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
+        user_data = pd.concat([user_data, categorical_encoded], axis=1)
+        user_data = user_data.reindex(columns=X.columns, fill_value=0)
 
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+        predicted_price = model.predict(user_data)
+        st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+
+# ---- DATA ANALYSIS ----
 def show_analysis():
     st.header("Detailed Data Analysis")
-
     df = load_data()
     if df is not None:
-        # 1. Bar Plot for Brand Distribution
         st.subheader("Brand Distribution")
         brand_counts = df['brand'].value_counts()
         fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
         st.plotly_chart(fig)
 
-        # 2. Pie Chart for Fuel Type Distribution
         st.subheader("Fuel Type Distribution")
         fuel_counts = df['fuel_type'].value_counts()
         fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, title="Fuel Type Distribution")
         st.plotly_chart(fig)
 
-        # 3. Histogram of Car Prices
         st.subheader("Distribution of Car Prices")
         fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
         st.plotly_chart(fig)
 
-        # 4. Box Plot for Price by Transmission Type
-        st.subheader("Price by Transmission Type")
-        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
-        st.plotly_chart(fig)
-
-        # 5. Scatter Plot - Price vs Mileage
-        st.subheader("Price vs Mileage")
-        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
-        st.plotly_chart(fig)
-
-        # 6. Heatmap of Correlation Matrix
-        st.subheader("Correlation Heatmap")
-        fig, ax = plt.subplots()
-        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
-        st.pyplot(fig)
-
-        # 7. Line Plot - Average Price by Car Age
-        st.subheader("Average Price by Car Age")
-        if 'vehicle_age' in df.columns:
-            age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
-            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age")
-            st.plotly_chart(fig)
-
-        # 8. Violin Plot for Price by Seller Type
-        st.subheader("Price by Seller Type")
-        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
-        st.plotly_chart(fig)
-
+# ---- MODEL COMPARISON ----
 def show_model_comparison():
     st.header("Model Comparison")
-    st.write("Compare model performance metrics on test dataset.")
-
     df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
@@ -164,7 +134,6 @@ def show_model_comparison():
         }
 
         metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
-
         for model_name, model in models.items():
             model.fit(X_train, y_train)
             y_pred = model.predict(X_test)
@@ -180,6 +149,7 @@ def show_model_comparison():
         metrics_df = pd.DataFrame(metrics)
         st.dataframe(metrics_df)
 
+# ---- CONTACT ----
 def show_contact():
     st.header("Contact Us")
     st.markdown("""
@@ -188,7 +158,7 @@ def show_contact():
         - [Email](mailto:shamanth2626@gmail.com) 📧
     """)
 
-# ---- DISPLAY SELECTED PAGE ----
+# ---- PAGE NAVIGATION ----
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
 
@@ -202,9 +172,8 @@ st.sidebar.button("Data Analysis", on_click=switch_page, args=('analysis',))
 st.sidebar.button("Model Comparison", on_click=switch_page, args=('model_comparison',))
 st.sidebar.button("Contact", on_click=switch_page, args=('contact',))
 
-# Display the appropriate page
 if st.session_state.page == 'home':
-    show_home()
+    st.title("Car Price Prediction & Analysis")
 elif st.session_state.page == 'prediction':
     show_prediction()
 elif st.session_state.page == 'analysis':
