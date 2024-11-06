@@ -11,6 +11,8 @@ from sklearn.impute import SimpleImputer
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
+import statsmodels.api as sm
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon="🚗", layout="wide")
@@ -40,20 +42,18 @@ def load_data():
         # Load data from the dataset file
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
-        # Display initial columns and data types
-        st.write("Initial Columns:", df.columns)
-        st.write("Data Types:", df.dtypes)
-        
         # Standardize column names
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
+        
+        # Handle categorical data
+        cat_cols = df.select_dtypes(include=['object']).columns
+        df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
+        
         # Impute missing values for numeric columns
         imputer = SimpleImputer(strategy="mean")
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
 
-        # Display preprocessed dataset
-        st.write("Preprocessed Data Sample:", df.head())
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
