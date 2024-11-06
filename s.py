@@ -35,7 +35,7 @@ def load_data():
     """Loads and preprocesses the car dataset."""
     try:
         # Specify the fixed path to the dataset file
-        file_path = 'data/used_cars.csv'  # give path of ur actual path in git or local env file path
+        file_path = 'data/used_cars.csv'  # replace with the actual path in your Git directory or local environment
         df = pd.read_csv(file_path, on_bad_lines='skip')
 
         # Impute missing values
@@ -78,12 +78,7 @@ def show_home():
 def show_prediction():
     st.header("Car Price Prediction")
 
-    if uploaded_file:
-        df = load_data(uploaded_file)
-    else:
-        st.warning("Please upload a CSV file to use this section.")
-        return
-
+    df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -109,12 +104,7 @@ def show_prediction():
 def show_analysis():
     st.header("Detailed Data Analysis")
 
-    if uploaded_file:
-        df = load_data(uploaded_file)
-    else:
-        st.warning("Please upload a CSV file to use this section.")
-        return
-
+    df = load_data()
     if df is not None:
         # 1. Bar Plot for Brand Distribution
         st.subheader("Brand Distribution")
@@ -164,12 +154,7 @@ def show_model_comparison():
     st.header("Model Comparison")
     st.write("Compare model performance metrics on test dataset.")
 
-    if uploaded_file:
-        df = load_data(uploaded_file)
-    else:
-        st.warning("Please upload a CSV file to use this section.")
-        return
-
+    df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -203,9 +188,9 @@ def show_model_comparison():
 def show_contact():
     st.header("Contact Us")
     st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)
-        - [Instagram](https://www.instagram.com/shamanth_m_)
-        - [Email](mailto:shamanth2626@gmail.com)
+        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264) 🖇️
+        - [Instagram](https://www.instagram.com/shamanth_m_) 📸
+        - [Email](mailto:shamanth2626@gmail.com) 📧
     """)
 
 # ---- DISPLAY SELECTED PAGE ----
