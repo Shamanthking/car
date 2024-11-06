@@ -35,7 +35,7 @@ def load_data():
     """Loads and preprocesses the car dataset from a fixed path."""
     try:
         # Specify the fixed path to the dataset file
-        file_path = '/mnt/data/cardekho_dataset.csv'
+        file_path = '/data/carr.csv'
         
         # Load data from the dataset file
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
