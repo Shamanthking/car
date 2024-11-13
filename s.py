@@ -12,10 +12,9 @@ import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
-import statsmodels.api as sm
 
 # ---- PAGE CONFIGURATION ----
-st.set_page_config(page_title="Car Price Prediction & Analysis Dashboard", page_icon="🚗", layout="wide")
+st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
 # ---- CUSTOM CSS FOR BACKGROUND ----
 page_bg_img = '''
@@ -39,10 +38,11 @@ def load_data():
         file_path = 'data/carr.csv'
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
+        # Standardize column names
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
 
-        # Encode categorical features
-        cat_cols = df.select_dtypes(include=['object']).columns
+        # Encode categorical features (except brand for better display)
+        cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand'])
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
 
         # Impute missing values
@@ -55,11 +55,49 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return None
 
+# ---- HOMEPAGE ----
+def show_home():
+    st.title("Car Price Prediction Web Application")
+    st.subheader("Predict the price of used cars based on various features")
+
+    st.write("""
+        This Web Application is designed to help users estimate the price of used cars based on features like make, model, year, mileage, and more.
+        By leveraging machine learning models, we provide predictions to assist users in making informed decisions when buying or selling used cars.
+    """)
+
+    st.subheader("How to Use:")
+    st.write("""
+        1. Navigate to the Main Menu on the left.
+        2. Select "Car Price Prediction" to access the prediction tool.
+        3. Enter the car details and click "Predict Price" to get an estimate.
+    """)
+
+    st.subheader("Disclaimer:")
+    st.write("""
+        - This app provides approximate price estimates. Verify with other sources before making final decisions.
+    """)
+
+# ---- TEAM SECTION WITH BALLOONS ----
+def show_team():
+    st.title("Our Team")
+    st.write("Meet the dedicated contributors who developed this application:")
+
+    st.write("""
+    **Contributors:**
+    - **Deekshith N:** 4AD22CI009
+    - **Prashanth Singh H S:** 4AD22CI040
+    - **Shamanth M:** 4AD22CI047
+    - **Akash A S:** 4AD22CI400
+    """)
+    
+    st.balloons()
+
 # ---- PREDICTION PAGE ----
 def show_prediction():
-    st.header("Car Price Prediction")
+    st.title("Car Price Prediction")
     df = load_data()
     if df is not None:
+        # Input fields for prediction
         car_age = st.slider("Car Age", 0, 20, 10)
         km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
         seats = st.selectbox("Seats", [2, 4, 5, 7])
@@ -70,8 +108,8 @@ def show_prediction():
         fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
         seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
-       
 
+        # Preparing input data
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -83,15 +121,17 @@ def show_prediction():
             'max_power': [max_power],
             'mileage': [mileage],
             'engine_cc': [engine_cc],
-           
+            'brand': [brand],
+            'fuel_type': [fuel_type],
+            'seller_type': [seller_type],
+            'transmission': [transmission]
         })
 
         # One-hot encoding for the categorical features
-        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
-        categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
-        user_data = pd.concat([user_data, categorical_encoded], axis=1)
+        user_data = pd.get_dummies(user_data, columns=['brand', 'fuel_type', 'seller_type', 'transmission'], drop_first=True)
         user_data = user_data.reindex(columns=X.columns, fill_value=0)
 
+        # Train and predict using Random Forest model
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
         predicted_price = model.predict(user_data)
@@ -99,53 +139,26 @@ def show_prediction():
 
 # ---- DATA ANALYSIS ----
 def show_analysis():
-    st.header("Detailed Data Analysis")
+    st.title("Detailed Data Analysis")
+    st.write("Explore the data insights to understand car price trends.")
+
     df = load_data()
     if df is not None:
         st.subheader("Brand Distribution")
-        brand_counts = df['brand'].value_counts()
-        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
+        fig = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
         st.plotly_chart(fig)
 
         st.subheader("Fuel Type Distribution")
-        fuel_counts = df['fuel_type'].value_counts()
-        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, title="Fuel Type Distribution")
+        fig = px.pie(df, names='fuel_type', title="Fuel Type Distribution")
         st.plotly_chart(fig)
 
         st.subheader("Distribution of Car Prices")
         fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
         st.plotly_chart(fig)
-                # 4. Box Plot for Price by Transmission Type
-        st.subheader("Price by Transmission Type")
-        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
-        st.plotly_chart(fig)
-
-        # 5. Scatter Plot - Price vs Mileage
-        st.subheader("Price vs Mileage")
-        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
-        st.plotly_chart(fig)
-
-        # 6. Heatmap of Correlation Matrix
-        st.subheader("Correlation Heatmap")
-        fig, ax = plt.subplots()
-        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
-        st.pyplot(fig)
-
-        # 7. Line Plot - Average Price by Car Age
-        st.subheader("Average Price by Car Age")
-        if 'vehicle_age' in df.columns:
-            age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
-            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age")
-            st.plotly_chart(fig)
-
-        # 8. Violin Plot for Price by Seller Type
-        st.subheader("Price by Seller Type")
-        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
-        st.plotly_chart(fig)
 
 # ---- MODEL COMPARISON ----
 def show_model_comparison():
-    st.header("Model Comparison")
+    st.title("Model Comparison")
     df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
@@ -174,38 +187,38 @@ def show_model_comparison():
             metrics["R²"].append(r2)
 
         metrics_df = pd.DataFrame(metrics)
-        st.dataframe(metrics_df)
+        st.dataframe(metrics_df.style.highlight_min(subset=['MSE', 'RMSE'], color='lightgreen').highlight_max(subset=['R²'], color='lightblue'))
 
-# ---- CONTACT ----
-def show_contact():
-    st.header("Contact Us")
-    st.markdown("""
-        - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264) 🖇️
-        - [Instagram](https://www.instagram.com/shamanth_m_) 📸
-        - [Email](mailto:shamanth2626@gmail.com) 📧
-    """)
+# ---- FEEDBACK & CONTACT ----
+def show_feedback_contact():
+    st.title("We Value Your Feedback!")
+    st.write("Please rate your experience and provide feedback for our Car Price Prediction Web App.")
 
-# ---- PAGE NAVIGATION ----
-if 'page' not in st.session_state:
-    st.session_state.page = 'home'
+    rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
+    feedback = st.text_area("Questions or suggestions? Let us know.")
+    
+    if st.button("Submit"):
+        feedback_data = {
+            "rating": rating,
+            "feedback": feedback
+        }
+        st.write("Thank you for your feedback!")
+        st.json(feedback_data)
 
-def switch_page(page_name):
-    st.session_state.page = page_name
+    st.subheader("Contact Us")
+    st.write("If you have further questions or require assistance, reach out at:")
+    st.write("Email: support@carpredictionapp.com")
+    st.write("Phone: +123-456-7890")
 
-st.sidebar.title("Navigation")
-st.sidebar.button("Home", on_click=switch_page, args=('home',))
-st.sidebar.button("Prediction", on_click=switch_page, args=('prediction',))
-st.sidebar.button("Data Analysis", on_click=switch_page, args=('analysis',))
-st.sidebar.button("Model Comparison", on_click=switch_page, args=('model_comparison',))
-st.sidebar.button("Contact", on_click=switch_page, args=('contact',))
+# ---- NAVIGATION ----
+menu_options = {
+    "Home": show_home,
+    "Car Price Prediction": show_prediction,
+    "Data Analysis": show_analysis,
+    "Model Comparison": show_model_comparison,
+    "Team": show_team,
+    "Feedback & Contact": show_feedback_contact
+}
 
-if st.session_state.page == 'home':
-    st.title("Car Price Prediction & Analysis")
-elif st.session_state.page == 'prediction':
-    show_prediction()
-elif st.session_state.page == 'analysis':
-    show_analysis()
-elif st.session_state.page == 'model_comparison':
-    show_model_comparison()
-elif st.session_state.page == 'contact':
-    show_contact()
+selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
+menu_options[selected_menu]()
