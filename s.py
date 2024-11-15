@@ -20,7 +20,7 @@ st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="
 @st.cache_data
 def load_data():
     try:
-        file_path = '/mnt/data/carr.csv'
+        file_path = 'data/carr.csv'
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
         # Standardize column names
