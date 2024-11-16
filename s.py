@@ -1,4 +1,3 @@
-# Required imports
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -43,14 +42,27 @@ for file, columns in [(users_file, ["username", "email", "password"]),
 
 # ---- AUTHENTICATION ----
 def add_user(username, email, password):
-    users_df = pd.read_excel(users_file, engine="openpyxl")
-    if (users_df['username'] == username).any() or (users_df['email'] == email).any():
-        st.sidebar.error("Username or email already exists.")
-    else:
+    try:
+        # Load users data
+        if os.path.exists(users_file):
+            users_df = pd.read_excel(users_file, engine="openpyxl")
+        else:
+            users_df = pd.DataFrame(columns=["username", "email", "password"])
+
+        # Check if username or email already exists
+        if (users_df['username'] == username).any() or (users_df['email'] == email).any():
+            st.sidebar.error("Username or email already exists.")
+            return
+
+        # Append new user
         new_user = pd.DataFrame([[username, email, password]], columns=["username", "email", "password"])
         with pd.ExcelWriter(users_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
             new_user.to_excel(writer, index=False, header=False, startrow=len(users_df) + 1)
         st.sidebar.success("User registered successfully. Please login.")
+
+    except Exception as e:
+        st.sidebar.error(f"Error while registering user: {e}")
+
 
 def authenticate_user():
     st.sidebar.title("Authentication")
@@ -60,13 +72,16 @@ def authenticate_user():
         username = st.sidebar.text_input("Username", key="login_username")
         password = st.sidebar.text_input("Password", type="password", key="login_password")
         if st.sidebar.button("Login"):
-            users_df = pd.read_excel(users_file, engine="openpyxl")
-            user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
-            if not user.empty:
-                st.sidebar.success(f"Welcome, {username}!")
-                return True
-            else:
-                st.sidebar.error("Invalid username or password.")
+            try:
+                users_df = pd.read_excel(users_file, engine="openpyxl")
+                user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
+                if not user.empty:
+                    st.sidebar.success(f"Welcome, {username}!")
+                    return True
+                else:
+                    st.sidebar.error("Invalid username or password.")
+            except Exception as e:
+                st.sidebar.error(f"Error while authenticating: {e}")
                 return False
 
     elif auth_option == "Register":
@@ -80,6 +95,7 @@ def authenticate_user():
             else:
                 st.sidebar.error("Passwords do not match.")
     return False
+
 
 # ---- DATA LOADING ----
 @st.cache_data
@@ -204,15 +220,23 @@ def show_feedback_and_contact():
     st.subheader("We'd love to hear your feedback!")
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
     feedback = st.text_area("Share your suggestions or comments:")
-    
+
     if st.button("Submit Feedback"):
-        if feedback.strip():
+        try:
+            # Load existing feedback data
+            if os.path.exists(feedback_file):
+                feedback_df = pd.read_excel(feedback_file, engine="openpyxl")
+            else:
+                feedback_df = pd.DataFrame(columns=["rating", "comments"])
+
+            # Append new feedback
             new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
             with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
-                new_feedback.to_excel(writer, index=False, header=False, startrow=len(pd.read_excel(feedback_file, engine="openpyxl")) + 1)
+                new_feedback.to_excel(writer, index=False, header=False, startrow=len(feedback_df) + 1)
             st.success("Thank you for your feedback!")
-        else:
-            st.error("Please provide your feedback before submitting.")
+
+        except Exception as e:
+            st.error(f"Error while saving feedback: {e}")
 
     # Contact Information
     st.subheader("Contact Us")
@@ -232,6 +256,7 @@ def show_feedback_and_contact():
     - [Facebook](https://facebook.com)  
     - [Instagram](https://instagram.com)
     """)
+
 
 
 # ---- MAIN APP ----
