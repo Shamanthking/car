@@ -15,6 +15,19 @@ import matplotlib.pyplot as plt
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
+# ---- CUSTOM CSS FOR BACKGROUND ----
+page_bg_img = '''
+<style>
+.stApp {
+    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    color: white;
+}
+</style>
+'''
+st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
 @st.cache_data
@@ -97,7 +110,6 @@ def show_analysis():
 
     df = load_data()
     if df is not None:
-        # (10 Analysis Charts as mentioned earlier)
         st.subheader("Brand Distribution")
         fig1 = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
         st.plotly_chart(fig1)
