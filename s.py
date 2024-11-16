@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder
+import streamlit_authenticator as stauth
 import sqlite3
 import plotly.express as px
 import seaborn as sns
@@ -17,37 +18,58 @@ import matplotlib.pyplot as plt
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
-# ---- DATABASE FOR FEEDBACK ----
-conn = sqlite3.connect('feedback.db')
+# ---- DATABASE SETUP FOR NEW USERS ----
+conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
+
+# Create Users Table if not exists
 cursor.execute("""
-    CREATE TABLE IF NOT EXISTS feedback (
-        rating TEXT,
-        comments TEXT
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
     )
 """)
 conn.commit()
 
-# ---- AUTHENTICATION ----
-USER_CREDENTIALS = {
-    "admin": "password123",
-    "user": "user123"
-}
+# ---- HELPER FUNCTION TO ADD USERS ----
+def add_user(username, email, password):
+    cursor.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", (username, email, password))
+    conn.commit()
 
+# ---- AUTHENTICATION CONFIGURATION ----
 def authenticate_user():
-    st.sidebar.title("Login")
-    username = st.sidebar.text_input("Username", key="username")
-    password = st.sidebar.text_input("Password", type="password", key="password")
+    st.sidebar.title("Authentication")
+    auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"], key="auth_option")
 
-    if st.sidebar.button("Login"):
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-            st.sidebar.success(f"Welcome, {username}!")
-            return True
-        else:
-            st.sidebar.error("Invalid username or password.")
-            return False
+    if auth_option == "Login":
+        username = st.sidebar.text_input("Username", key="login_username")
+        password = st.sidebar.text_input("Password", type="password", key="login_password")
+        if st.sidebar.button("Login"):
+            cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+            user = cursor.fetchone()
+            if user:
+                st.sidebar.success(f"Welcome, {username}!")
+                return True
+            else:
+                st.sidebar.error("Invalid username or password.")
+                return False
+
+    elif auth_option == "Register":
+        new_username = st.sidebar.text_input("Create Username", key="register_username")
+        email = st.sidebar.text_input("Email", key="register_email")
+        new_password = st.sidebar.text_input("Create Password", type="password", key="register_password")
+        confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
+        if st.sidebar.button("Register"):
+            if new_password == confirm_password:
+                try:
+                    add_user(new_username, email, new_password)
+                    st.sidebar.success("User registered successfully. Please login.")
+                except sqlite3.IntegrityError:
+                    st.sidebar.error("Username or email already exists.")
+            else:
+                st.sidebar.error("Passwords do not match.")
     return False
-
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data(uploaded_file):
