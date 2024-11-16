@@ -12,19 +12,19 @@ import os
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
 # ---- EXCEL FILE SETUP ----
-users_file = 'users.xlsx'
-feedback_file = 'feedback.xlsx'
+users_file = 'users_data.xlsx'
+feedback_file = 'feedback_data.xlsx'
 
 # Create users and feedback Excel files if they don't exist
 if not os.path.exists(users_file):
-    pd.DataFrame(columns=["username", "email", "password"]).to_excel(users_file, index=False)
+    pd.DataFrame(columns=["username", "email", "password"]).to_excel(users_file, index=False, engine="openpyxl")
 
 if not os.path.exists(feedback_file):
-    pd.DataFrame(columns=["rating", "comments"]).to_excel(feedback_file, index=False)
+    pd.DataFrame(columns=["rating", "comments"]).to_excel(feedback_file, index=False, engine="openpyxl")
 
 # ---- AUTHENTICATION ----
 def add_user(username, email, password):
-    users_df = pd.read_excel(users_file)
+    users_df = pd.read_excel(users_file, engine="openpyxl")
     if (users_df['username'] == username).any() or (users_df['email'] == email).any():
         st.sidebar.error("Username or email already exists.")
     else:
@@ -41,7 +41,7 @@ def authenticate_user():
         username = st.sidebar.text_input("Username", key="login_username")
         password = st.sidebar.text_input("Password", type="password", key="login_password")
         if st.sidebar.button("Login"):
-            users_df = pd.read_excel(users_file)
+            users_df = pd.read_excel(users_file, engine="openpyxl")
             user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
             if not user.empty:
                 st.sidebar.success(f"Welcome, {username}!")
@@ -66,7 +66,7 @@ def authenticate_user():
 @st.cache_data
 def load_data(uploaded_file):
     try:
-        df = pd.read_csv("data/carr.csv/", encoding='utf-8', on_bad_lines='skip')
+        df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
         cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand', 'model'])
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
@@ -149,7 +149,7 @@ def show_feedback():
     if st.button("Submit Feedback"):
         new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
         with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
-            new_feedback.to_excel(writer, index=False, header=False, startrow=len(pd.read_excel(feedback_file)) + 1)
+            new_feedback.to_excel(writer, index=False, header=False, startrow=len(pd.read_excel(feedback_file, engine="openpyxl")) + 1)
         st.success("Thank you for your feedback!")
     st.write("Contact Us: support@carpredictionapp.com | +123-456-7890")
 
