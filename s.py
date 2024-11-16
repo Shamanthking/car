@@ -66,7 +66,7 @@ def authenticate_user():
 @st.cache_data
 def load_data(uploaded_file):
     try:
-        df = pd.read_csv("data/carr.csv", encoding='utf-8', on_bad_lines='skip')
+        df = pd.read_csv("data/carr.csv/", encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
         cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand', 'model'])
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
