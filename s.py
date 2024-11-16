@@ -72,6 +72,9 @@ def add_user(username, email, password):
 
 
 def authenticate_user():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
     st.sidebar.title("Authentication")
     auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"], key="auth_option")
 
@@ -84,19 +87,18 @@ def authenticate_user():
                     users_df = pd.read_excel(users_file, engine="openpyxl")
                 else:
                     st.sidebar.error("No users found. Please register first.")
-                    return False
+                    return
 
                 # Validate credentials
                 user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
                 if not user.empty:
                     st.sidebar.success(f"Welcome, {username}!")
-                    return True
+                    st.session_state.authenticated = True
+                    st.session_state.username = username
                 else:
                     st.sidebar.error("Invalid username or password.")
-                    return False
             except Exception as e:
                 st.sidebar.error(f"Error while authenticating: {e}")
-                return False
 
     elif auth_option == "Register":
         new_username = st.sidebar.text_input("Create Username", key="register_username")
@@ -108,7 +110,9 @@ def authenticate_user():
                 add_user(new_username, email, new_password)
             else:
                 st.sidebar.error("Passwords do not match.")
-    return False
+
+    return st.session_state.authenticated
+
 
 def save_to_excel(df, file_name):
     try:
@@ -127,18 +131,14 @@ def load_data(file_path):
     try:
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-        
-        # Encode categorical features and handle missing values
-        cat_cols = df.select_dtypes(include=['object']).columns
-        df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        imputer = SimpleImputer(strategy="mean")
-        df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
-
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
+
+if "df" not in st.session_state:
+    st.session_state.df = load_data('data/carr.csv')
+
 
 # ---- HOME PAGE ----
 def show_home(df):
@@ -288,15 +288,17 @@ if authenticate_user():
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select a page:", ["Home", "Prediction", "Analysis", "Team", "Feedback"])
 
-    df = load_data('data/carr.csv')
-    if df is not None:
+    if st.session_state.df is not None:
         if menu == "Home":
-            show_home(df)
+            show_home(st.session_state.df)
         elif menu == "Prediction":
-            show_prediction(df)
+            show_prediction(st.session_state.df)
         elif menu == "Analysis":
-            show_analysis(df)
+            show_analysis(st.session_state.df)
         elif menu == "Team":
             show_team()
         elif menu == "Feedback":
             show_feedback_and_contact()
+    else:
+        st.error("Data could not be loaded. Please check the dataset.")
+
