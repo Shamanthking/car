@@ -1,53 +1,95 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
+from openpyxl import Workbook
+import os
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
-# ---- CUSTOM CSS FOR BACKGROUND ----
-page_bg_img = '''
-<style>
-.stApp {
-    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
-    color: white;
-}
-</style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
+# ---- EXCEL FILE SETUP ----
+users_file = 'users_data.xlsx'
+feedback_file = 'feedback_data.xlsx'
+
+# Helper function to create an empty Excel file with specified columns
+def create_empty_excel(file_name, columns):
+    wb = Workbook()
+    ws = wb.active
+    ws.append(columns)
+    wb.save(file_name)
+
+# Create users and feedback Excel files if they don't exist or are not valid Excel files
+for file, columns in [(users_file, ["username", "email", "password"]), 
+                      (feedback_file, ["rating", "comments"])]:
+    if not os.path.exists(file):
+        create_empty_excel(file, columns)
+    else:
+        try:
+            # Try to read the file to check if it is a valid Excel file
+            pd.read_excel(file, engine="openpyxl")
+        except Exception:
+            # If not a valid Excel file, recreate it
+            os.remove(file)
+            create_empty_excel(file, columns)
+
+# ---- AUTHENTICATION ----
+def add_user(username, email, password):
+    users_df = pd.read_excel(users_file, engine="openpyxl")
+    if (users_df['username'] == username).any() or (users_df['email'] == email).any():
+        st.sidebar.error("Username or email already exists.")
+    else:
+        new_user = pd.DataFrame([[username, email, password]], columns=["username", "email", "password"])
+        with pd.ExcelWriter(users_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+            new_user.to_excel(writer, index=False, header=False, startrow=len(users_df) + 1)
+        st.sidebar.success("User registered successfully. Please login.")
+
+def authenticate_user():
+    st.sidebar.title("Authentication")
+    auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"], key="auth_option")
+
+    if auth_option == "Login":
+        username = st.sidebar.text_input("Username", key="login_username")
+        password = st.sidebar.text_input("Password", type="password", key="login_password")
+        if st.sidebar.button("Login"):
+            users_df = pd.read_excel(users_file, engine="openpyxl")
+            user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
+            if not user.empty:
+                st.sidebar.success(f"Welcome, {username}!")
+                return True
+            else:
+                st.sidebar.error("Invalid username or password.")
+                return False
+
+    elif auth_option == "Register":
+        new_username = st.sidebar.text_input("Create Username", key="register_username")
+        email = st.sidebar.text_input("Email", key="register_email")
+        new_password = st.sidebar.text_input("Create Password", type="password", key="register_password")
+        confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
+        if st.sidebar.button("Register"):
+            if new_password == confirm_password:
+                add_user(new_username, email, new_password)
+            else:
+                st.sidebar.error("Passwords do not match.")
+    return False
 
 # ---- LOAD DATA ----
 @st.cache_data
-def load_data():
-    """Loads and preprocesses the car dataset from a fixed path."""
+def load_data(uploaded_file):
     try:
-        file_path = 'data/carr.csv'
-        df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
-        
-        # Standardize column names
+        df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
-        # Encode categorical features (except brand for better display)
-        cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand'])
-        df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-
-        # Impute missing values
-        imputer = SimpleImputer(strategy="mean")
+        
+        # Encode categorical features and handle missing values
+        cat_cols = df.select_dtypes(include=['object']).columns
+        df = pd.get_dummies(df, columns=cat_cols, drop_first=True)
         numeric_cols = df.select_dtypes(include=[np.number]).columns
+        imputer = SimpleImputer(strategy="mean")
         df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
 
         return df
@@ -55,144 +97,99 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return None
 
+# ---- TRAIN MODEL ----
+@st.cache_resource
+def train_model(X, y):
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+    return model
+
 # ---- HOMEPAGE ----
 def show_home():
-    st.title("Car Price Prediction Web Application")
-    st.subheader("Predict the price of used cars based on various features")
+    st.title("Car Price Prediction Application 🚗")
+    st.write("Welcome to the Car Price Prediction app! This tool helps predict car prices, explore data insights, and compare machine learning models.")
+    st.image("https://images.pexels.com/photos/10287567/pexels-photo-10287567.jpeg", caption="Predict Car Prices Instantly", use_column_width=True)
 
-    st.write("""
-        This Web Application is designed to help users estimate the price of used cars based on features like make, model, year, mileage, and more.
-        By leveraging machine learning models, we provide predictions to assist users in making informed decisions when buying or selling used cars.
-    """)
-
-# ---- TEAM SECTION WITH BALLOONS ----
-def show_team():
-    st.title("Our Team")
-    st.write("Meet the dedicated contributors who developed this application:")
-    st.write("""
-    - **Deekshith N:** 4AD22CI009
-    - **Prashanth Singh H S:** 4AD22CI040
-    - **Shamanth M:** 4AD22CI047
-    - **Akash A S:** 4AD22CI400
-    """)
-    st.balloons()
-
-# ---- PREDICTION PAGE ----
-def show_prediction():
+# ---- CAR PRICE PREDICTION ----
+def show_prediction(df):
     st.title("Car Price Prediction")
-    df = load_data()
-    if df is not None:
-        # Input fields for prediction
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        seats = st.selectbox("Seats", [2, 4, 5, 7])
-        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        brand = st.selectbox("Brand", df['brand'].unique())
-        fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
-        seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
-        transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
+    car_age = st.slider("Car Age", 0, 20, 10)
+    km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+    seats = st.selectbox("Seats", [2, 4, 5, 7])
+    max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+    mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+    engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+    
+    # Gather categories dynamically
+    brand = st.selectbox("Brand", df.filter(regex='^brand_').columns)
+    fuel_type = st.selectbox("Fuel Type", df.filter(regex='^fuel_type_').columns)
+    seller_type = st.selectbox("Seller Type", df.filter(regex='^seller_type_').columns)
+    transmission = st.selectbox("Transmission", df.filter(regex='^transmission_type_').columns)
 
-        # Preparing input data
-        X = df.drop(columns=['selling_price'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Prepare user input for model prediction
+    X = df.drop(columns=['selling_price'])
+    y = df['selling_price']
+    user_data = pd.DataFrame({
+        'vehicle_age': [car_age],
+        'km_driven': [km_driven],
+        'seats': [seats],
+        'max_power': [max_power],
+        'mileage': [mileage],
+        'engine': [engine_cc],
+        **{col: [0] for col in X.columns if col.startswith(('brand_', 'fuel_type_', 'seller_type_', 'transmission_type_'))}
+    })
+    user_data[brand] = 1
+    user_data[fuel_type] = 1
+    user_data[seller_type] = 1
+    user_data[transmission] = 1
 
-        user_data = pd.DataFrame({
-            'car_age': [car_age],
-            'km_driven': [km_driven],
-            'seats': [seats],
-            'max_power': [max_power],
-            'mileage': [mileage],
-            'engine_cc': [engine_cc],
-            'brand': [brand],
-            'fuel_type': [fuel_type],
-            'seller_type': [seller_type],
-            'transmission': [transmission]
-        })
-
-        # One-hot encoding for the categorical features
-        user_data = pd.get_dummies(user_data, columns=['brand', 'fuel_type', 'seller_type', 'transmission'], drop_first=True)
-        user_data = user_data.reindex(columns=X.columns, fill_value=0)
-
-        # Train and predict using Random Forest model
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-        predicted_price = model.predict(user_data)
-        st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+    # Train model and predict price
+    model = train_model(X, y)
+    predicted_price = model.predict(user_data)
+    st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
 
 # ---- DATA ANALYSIS ----
-def show_analysis():
-    st.title("Detailed Data Analysis")
-    st.write("Explore the data insights to understand car price trends.")
-    df = load_data()
-    if df is not None:
-        st.subheader("Brand Distribution")
-        fig = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
-        st.plotly_chart(fig)
+def show_analysis(df):
+    st.title("Data Analysis")
+    st.subheader("Brand Distribution")
+    fig1 = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
+    st.plotly_chart(fig1)
 
-# ---- MODEL COMPARISON ----
-def show_model_comparison():
-    st.title("Model Comparison")
-    df = load_data()
-    if df is not None:
-        X = df.drop(columns=['selling_price'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# ---- TEAM ----
+def show_team():
+    st.title("Meet the Team")
+    st.write("""
+    - **John Doe**: Data Scientist  
+    - **Jane Smith**: Backend Developer  
+    - **Alan Turing**: ML Specialist  
+    """)
 
-        models = {
-            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
-            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "Linear Regression": LinearRegression(),
-            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
-            "Decision Tree": DecisionTreeRegressor(random_state=42)
-        }
-
-        metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
-        for model_name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
-
-            metrics["Model"].append(model_name)
-            metrics["MSE"].append(mse)
-            metrics["RMSE"].append(rmse)
-            metrics["R²"].append(r2)
-
-        metrics_df = pd.DataFrame(metrics)
-        st.dataframe(metrics_df.style.highlight_min(subset=['MSE', 'RMSE'], color='lightgreen').highlight_max(subset=['R²'], color='lightblue'))
-
-# ---- FEEDBACK & CONTACT ----
-def show_feedback_contact():
-    st.title("We Value Your Feedback!")
+# ---- FEEDBACK ----
+def show_feedback():
+    st.title("Feedback & Contact")
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
-    feedback = st.text_area("Questions or suggestions? Let us know.")
-    
-    if st.button("Submit"):
-        feedback_data = {
-            "rating": rating,
-            "feedback": feedback
-        }
-        st.write("Thank you for your feedback!")
-        st.json(feedback_data)
-
-    st.subheader("Contact Us")
-    st.write("If you have further questions or require assistance, reach out at:")
-    st.write("Email: support@carpredictionapp.com")
-    st.write("Phone: +123-456-7890")
+    feedback = st.text_area("Suggestions or comments?")
+    if st.button("Submit Feedback"):
+        new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
+        with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+            new_feedback.to_excel(writer, index=False, header=False, startrow=len(pd.read_excel(feedback_file, engine="openpyxl")) + 1)
+        st.success("Thank you for your feedback!")
+    st.write("Contact Us: support@carpredictionapp.com | +123-456-7890")
 
 # ---- NAVIGATION ----
-menu_options = {
-    "Home": show_home,
-    "Car Price Prediction": show_prediction,
-    "Data Analysis": show_analysis,
-    "Model Comparison": show_model_comparison,
-    "Team": show_team,
-    "Feedback & Contact": show_feedback_contact
-}
-
-selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
-menu_options[selected_menu]()
+if authenticate_user():
+    menu_options = {
+        "Home": show_home,
+        "Car Price Prediction": show_prediction,
+        "Data Analysis": show_analysis,
+        "Team": show_team,
+        "Feedback & Contact": show_feedback
+    }
+    selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
+    uploaded_file = st.sidebar.file_uploader("Upload Dataset", type=["csv"])
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        if df is not None:
+            menu_options[selected_menu](df)
+    else:
+        st.sidebar.info("Please upload a CSV dataset to proceed.")
