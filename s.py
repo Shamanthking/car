@@ -1,49 +1,37 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
-import sqlite3
+from sklearn.impute import SimpleImputer
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
+from openpyxl import load_workbook
+import os
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
-# ---- DATABASE SETUP ----
-conn = sqlite3.connect('app_data.db')
-cursor = conn.cursor()
+# ---- EXCEL FILE SETUP ----
+users_file = 'users.xlsx'
+feedback_file = 'feedback.xlsx'
 
-# Create Users Table if not exists
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        username TEXT PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
-    )
-""")
+# Create users and feedback Excel files if they don't exist
+if not os.path.exists(users_file):
+    pd.DataFrame(columns=["username", "email", "password"]).to_excel(users_file, index=False)
 
-# Create Feedback Table if not exists
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        rating TEXT NOT NULL,
-        comments TEXT
-    )
-""")
-conn.commit()
+if not os.path.exists(feedback_file):
+    pd.DataFrame(columns=["rating", "comments"]).to_excel(feedback_file, index=False)
 
 # ---- AUTHENTICATION ----
 def add_user(username, email, password):
-    cursor.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", (username, email, password))
-    conn.commit()
+    users_df = pd.read_excel(users_file)
+    if (users_df['username'] == username).any() or (users_df['email'] == email).any():
+        st.sidebar.error("Username or email already exists.")
+    else:
+        new_user = pd.DataFrame([[username, email, password]], columns=["username", "email", "password"])
+        with pd.ExcelWriter(users_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+            new_user.to_excel(writer, index=False, header=False, startrow=len(users_df) + 1)
+        st.sidebar.success("User registered successfully. Please login.")
 
 def authenticate_user():
     st.sidebar.title("Authentication")
@@ -53,9 +41,9 @@ def authenticate_user():
         username = st.sidebar.text_input("Username", key="login_username")
         password = st.sidebar.text_input("Password", type="password", key="login_password")
         if st.sidebar.button("Login"):
-            cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
-            user = cursor.fetchone()
-            if user:
+            users_df = pd.read_excel(users_file)
+            user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
+            if not user.empty:
                 st.sidebar.success(f"Welcome, {username}!")
                 return True
             else:
@@ -69,11 +57,7 @@ def authenticate_user():
         confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
         if st.sidebar.button("Register"):
             if new_password == confirm_password:
-                try:
-                    add_user(new_username, email, new_password)
-                    st.sidebar.success("User registered successfully. Please login.")
-                except sqlite3.IntegrityError:
-                    st.sidebar.error("Username or email already exists.")
+                add_user(new_username, email, new_password)
             else:
                 st.sidebar.error("Passwords do not match.")
     return False
@@ -82,7 +66,7 @@ def authenticate_user():
 @st.cache_data
 def load_data(uploaded_file):
     try:
-        df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
+        df = pd.read_csv("data/carr.csv", encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
         cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand', 'model'])
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
@@ -163,8 +147,9 @@ def show_feedback():
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
     feedback = st.text_area("Suggestions or comments?")
     if st.button("Submit Feedback"):
-        cursor.execute("INSERT INTO feedback (rating, comments) VALUES (?, ?)", (rating, feedback))
-        conn.commit()
+        new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
+        with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+            new_feedback.to_excel(writer, index=False, header=False, startrow=len(pd.read_excel(feedback_file)) + 1)
         st.success("Thank you for your feedback!")
     st.write("Contact Us: support@carpredictionapp.com | +123-456-7890")
 
