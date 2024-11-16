@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder
-import streamlit_authenticator as stauth
 import sqlite3
 import plotly.express as px
 import seaborn as sns
@@ -18,8 +17,8 @@ import matplotlib.pyplot as plt
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
-# ---- DATABASE SETUP FOR NEW USERS ----
-conn = sqlite3.connect('users.db')
+# ---- DATABASE SETUP ----
+conn = sqlite3.connect('app_data.db')
 cursor = conn.cursor()
 
 # Create Users Table if not exists
@@ -30,14 +29,22 @@ cursor.execute("""
         password TEXT NOT NULL
     )
 """)
+
+# Create Feedback Table if not exists
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rating TEXT NOT NULL,
+        comments TEXT
+    )
+""")
 conn.commit()
 
-# ---- HELPER FUNCTION TO ADD USERS ----
+# ---- AUTHENTICATION ----
 def add_user(username, email, password):
     cursor.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", (username, email, password))
     conn.commit()
 
-# ---- AUTHENTICATION CONFIGURATION ----
 def authenticate_user():
     st.sidebar.title("Authentication")
     auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"], key="auth_option")
@@ -70,6 +77,7 @@ def authenticate_user():
             else:
                 st.sidebar.error("Passwords do not match.")
     return False
+
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data(uploaded_file):
@@ -102,7 +110,6 @@ def show_home():
 # ---- CAR PRICE PREDICTION ----
 def show_prediction(df):
     st.title("Car Price Prediction")
-
     car_age = st.slider("Car Age", 0, 20, 10)
     km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
     seats = st.selectbox("Seats", [2, 4, 5, 7])
@@ -137,52 +144,9 @@ def show_prediction(df):
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
     st.title("Data Analysis")
-
     st.subheader("Brand Distribution")
     fig1 = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
     st.plotly_chart(fig1)
-
-    st.subheader("Fuel Type Distribution")
-    fig2 = px.pie(df, names='fuel_type', title="Fuel Type Share")
-    st.plotly_chart(fig2)
-
-    st.subheader("Transmission Type Count")
-    fig3 = px.histogram(df, x='transmission_type')
-    st.plotly_chart(fig3)
-
-    st.subheader("Selling Price vs. Engine Capacity")
-    fig4 = px.scatter(df, x='engine', y='selling_price', color='brand', title="Price vs Engine")
-    st.plotly_chart(fig4)
-
-    st.subheader("Heatmap: Correlation")
-    corr = df.corr()
-    fig5, ax = plt.subplots()
-    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
-    st.pyplot(fig5)
-
-# ---- MODEL COMPARISON ----
-def show_model_comparison(df):
-    st.title("Model Comparison")
-    X = df.drop(columns=['selling_price'])
-    y = df['selling_price']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    models = {
-        "Random Forest": RandomForestRegressor(),
-        "Gradient Boosting": GradientBoostingRegressor(),
-        "Linear Regression": LinearRegression(),
-        "K-Neighbors Regressor": KNeighborsRegressor(),
-        "Decision Tree": DecisionTreeRegressor()
-    }
-    results = []
-    for name, model in models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-        results.append((name, mse, r2))
-
-    results_df = pd.DataFrame(results, columns=["Model", "MSE", "R²"])
-    st.dataframe(results_df)
 
 # ---- TEAM ----
 def show_team():
@@ -210,7 +174,6 @@ if authenticate_user():
         "Home": show_home,
         "Car Price Prediction": show_prediction,
         "Data Analysis": show_analysis,
-        "Model Comparison": show_model_comparison,
         "Team": show_team,
         "Feedback & Contact": show_feedback
     }
@@ -218,7 +181,7 @@ if authenticate_user():
     uploaded_file = st.sidebar.file_uploader("Upload Dataset", type=["csv"])
     if uploaded_file:
         df = load_data(uploaded_file)
-        if selected_menu in ["Car Price Prediction", "Data Analysis", "Model Comparison"] and df is not None:
+        if selected_menu in ["Car Price Prediction", "Data Analysis"] and df is not None:
             menu_options[selected_menu](df)
         else:
             menu_options[selected_menu]()
