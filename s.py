@@ -143,7 +143,7 @@ def load_data(file_path):
 # ---- HOME PAGE ----
 def show_home(df):
     st.title("Welcome to the Car Price Prediction App 🚗")
-    st.image("https://images.pexels.com/photos/10287567/pexels-photo-10287567.jpeg", caption="Accurate Car Price Predictions", use_column_width=True)
+    st.image("https://images.pexels.com/photos/10287567/pexels-photo-10287567.jpeg", caption="Accurate Car Price Predictions", use_container_width=True)
     st.write("""
     This application provides insights into car prices using machine learning models.  
     You can upload your dataset, analyze car features, and predict selling prices instantly.
