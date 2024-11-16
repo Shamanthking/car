@@ -12,8 +12,8 @@ import os
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
 # ---- EXCEL FILE SETUP ----
-users_file = 'users_data.xlsx'
-feedback_file = 'feedback_data.xlsx'
+users_file = 'users.xlsx'
+feedback_file = 'feedback.xlsx'
 
 # Create users and feedback Excel files if they don't exist
 if not os.path.exists(users_file):
