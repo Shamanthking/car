@@ -9,185 +9,196 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder
+import sqlite3
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
-# ---- CUSTOM CSS FOR BACKGROUND ----
-page_bg_img = '''
-<style>
-.stApp {
-    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
-    color: white;
+
+# ---- DATABASE FOR FEEDBACK ----
+conn = sqlite3.connect('feedback.db')
+cursor = conn.cursor()
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS feedback (
+        rating TEXT,
+        comments TEXT
+    )
+""")
+conn.commit()
+
+# ---- AUTHENTICATION ----
+USER_CREDENTIALS = {
+    "admin": "password123",
+    "user": "user123"
 }
-</style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
+
+def authenticate_user():
+    st.sidebar.title("Login")
+    username = st.sidebar.text_input("Username", key="username")
+    password = st.sidebar.text_input("Password", type="password", key="password")
+
+    if st.sidebar.button("Login"):
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            st.sidebar.success(f"Welcome, {username}!")
+            return True
+        else:
+            st.sidebar.error("Invalid username or password.")
+            return False
+    return False
 
 # ---- LOAD DATA ----
 @st.cache_data
-def load_data():
+def load_data(uploaded_file):
     try:
-        file_path = 'data/carr.csv'
-        df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
-        
-        # Standardize column names
+        df = pd.read_csv(uploaded_file, encoding='utf-8', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
-        # Encode categorical features
         cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand', 'model'])
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-
-        # Impute missing values
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         imputer = SimpleImputer(strategy="mean")
         df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
-
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
 
+# ---- TRAIN MODEL ----
+@st.cache_resource
+def train_model(X, y):
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+    return model
+
 # ---- HOMEPAGE ----
 def show_home():
-    st.title("Car Price Prediction Web Application")
+    st.title("Car Price Prediction Application 🚗")
     st.write("Welcome to the Car Price Prediction app! This tool helps predict car prices, explore data insights, and compare machine learning models.")
+    st.image("https://images.pexels.com/photos/10287567/pexels-photo-10287567.jpeg", caption="Predict Car Prices Instantly", use_column_width=True)
 
-# ---- PREDICTION PAGE ----
-def show_prediction():
+# ---- CAR PRICE PREDICTION ----
+def show_prediction(df):
     st.title("Car Price Prediction")
-    df = load_data()
-    if df is not None:
-        # Input fields for prediction
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        seats = st.selectbox("Seats", [2, 4, 5, 7])
-        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        brand = st.selectbox("Brand", df['brand'].unique())
-        fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
-        seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
-        transmission = st.selectbox("Transmission", df['transmission_type'].unique())
 
-        # Prepare data for model prediction
-        X = df.drop(columns=['selling_price'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    car_age = st.slider("Car Age", 0, 20, 10)
+    km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+    seats = st.selectbox("Seats", [2, 4, 5, 7])
+    max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+    mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+    engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+    brand = st.selectbox("Brand", df['brand'].unique())
+    fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
+    seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
+    transmission = st.selectbox("Transmission", df['transmission_type'].unique())
 
-        user_data = pd.DataFrame({
-            'vehicle_age': [car_age],
-            'km_driven': [km_driven],
-            'seats': [seats],
-            'max_power': [max_power],
-            'mileage': [mileage],
-            'engine': [engine_cc],
-            'brand': [brand],
-            'fuel_type': [fuel_type],
-            'seller_type': [seller_type],
-            'transmission_type': [transmission]
-        })
-
-        # One-hot encoding for the categorical features
-        user_data = pd.get_dummies(user_data)
-        user_data = user_data.reindex(columns=X.columns, fill_value=0)
-
-        # Train and predict using Random Forest model
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-        predicted_price = model.predict(user_data)
-        st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+    X = df.drop(columns=['selling_price'])
+    y = df['selling_price']
+    user_data = pd.DataFrame({
+        'vehicle_age': [car_age],
+        'km_driven': [km_driven],
+        'seats': [seats],
+        'max_power': [max_power],
+        'mileage': [mileage],
+        'engine': [engine_cc],
+        'brand': [brand],
+        'fuel_type': [fuel_type],
+        'seller_type': [seller_type],
+        'transmission_type': [transmission]
+    })
+    user_data = pd.get_dummies(user_data)
+    user_data = user_data.reindex(columns=X.columns, fill_value=0)
+    model = train_model(X, y)
+    predicted_price = model.predict(user_data)
+    st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
 
 # ---- DATA ANALYSIS ----
-def show_analysis():
+def show_analysis(df):
     st.title("Data Analysis")
-    st.write("Explore the car dataset with insightful visualizations.")
 
-    df = load_data()
-    if df is not None:
-        st.subheader("Brand Distribution")
-        fig1 = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
-        st.plotly_chart(fig1)
+    st.subheader("Brand Distribution")
+    fig1 = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
+    st.plotly_chart(fig1)
+
+    st.subheader("Fuel Type Distribution")
+    fig2 = px.pie(df, names='fuel_type', title="Fuel Type Share")
+    st.plotly_chart(fig2)
+
+    st.subheader("Transmission Type Count")
+    fig3 = px.histogram(df, x='transmission_type')
+    st.plotly_chart(fig3)
+
+    st.subheader("Selling Price vs. Engine Capacity")
+    fig4 = px.scatter(df, x='engine', y='selling_price', color='brand', title="Price vs Engine")
+    st.plotly_chart(fig4)
+
+    st.subheader("Heatmap: Correlation")
+    corr = df.corr()
+    fig5, ax = plt.subplots()
+    sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot(fig5)
 
 # ---- MODEL COMPARISON ----
-def show_model_comparison():
+def show_model_comparison(df):
     st.title("Model Comparison")
-    st.write("Evaluate different machine learning models on their performance.")
+    X = df.drop(columns=['selling_price'])
+    y = df['selling_price']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    models = {
+        "Random Forest": RandomForestRegressor(),
+        "Gradient Boosting": GradientBoostingRegressor(),
+        "Linear Regression": LinearRegression(),
+        "K-Neighbors Regressor": KNeighborsRegressor(),
+        "Decision Tree": DecisionTreeRegressor()
+    }
+    results = []
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        results.append((name, mse, r2))
 
-    df = load_data()
-    if df is not None:
-        X = df.drop(columns=['selling_price'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    results_df = pd.DataFrame(results, columns=["Model", "MSE", "R²"])
+    st.dataframe(results_df)
 
-        models = {
-            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
-            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "Linear Regression": LinearRegression(),
-            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
-            "Decision Tree": DecisionTreeRegressor(random_state=42)
-        }
-
-        metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
-        for model_name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
-
-            metrics["Model"].append(model_name)
-            metrics["MSE"].append(mse)
-            metrics["RMSE"].append(rmse)
-            metrics["R²"].append(r2)
-
-        metrics_df = pd.DataFrame(metrics)
-        st.dataframe(metrics_df.style.highlight_min(subset=['MSE', 'RMSE'], color='lightgreen').highlight_max(subset=['R²'], color='lightblue'))
-
-# ---- TEAM SECTION ----
+# ---- TEAM ----
 def show_team():
     st.title("Meet the Team")
     st.write("""
-    - **Deekshith N**: Data Scientist  
-    - **Prashanth Singh H S**: Machine Learning Engineer  
-    - **Shamanth M**: Backend Developer  
-    - **Akash A S**: Frontend Developer
+    - **John Doe**: Data Scientist  
+    - **Jane Smith**: Backend Developer  
+    - **Alan Turing**: ML Specialist  
     """)
 
-# ---- FEEDBACK & CONTACT ----
-def show_feedback_contact():
-    st.title("We Value Your Feedback")
-    st.write("Rate your experience and leave your feedback.")
-
+# ---- FEEDBACK ----
+def show_feedback():
+    st.title("Feedback & Contact")
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
     feedback = st.text_area("Suggestions or comments?")
-
     if st.button("Submit Feedback"):
-        feedback_data = {"Rating": rating, "Feedback": feedback}
-        feedback_df = pd.DataFrame([feedback_data])
-        feedback_df.to_excel("feedback.xlsx", index=False, mode="a", header=False)
-        st.write("Thank you for your feedback!")
-
-    st.subheader("Contact Us")
-    st.write("""
-    - Email: support@carpredictionapp.com  
-    - Phone: +123-456-7890
-    """)
+        cursor.execute("INSERT INTO feedback (rating, comments) VALUES (?, ?)", (rating, feedback))
+        conn.commit()
+        st.success("Thank you for your feedback!")
+    st.write("Contact Us: support@carpredictionapp.com | +123-456-7890")
 
 # ---- NAVIGATION ----
-menu_options = {
-    "Home": show_home,
-    "Car Price Prediction": show_prediction,
-    "Data Analysis": show_analysis,
-    "Model Comparison": show_model_comparison,
-    "Team": show_team,
-    "Feedback & Contact": show_feedback_contact
-}
-
-selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
-menu_options[selected_menu]()
+if authenticate_user():
+    menu_options = {
+        "Home": show_home,
+        "Car Price Prediction": show_prediction,
+        "Data Analysis": show_analysis,
+        "Model Comparison": show_model_comparison,
+        "Team": show_team,
+        "Feedback & Contact": show_feedback
+    }
+    selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
+    uploaded_file = st.sidebar.file_uploader("Upload Dataset", type=["csv"])
+    if uploaded_file:
+        df = load_data(uploaded_file)
+        if selected_menu in ["Car Price Prediction", "Data Analysis", "Model Comparison"] and df is not None:
+            menu_options[selected_menu](df)
+        else:
+            menu_options[selected_menu]()
+    else:
+        st.warning("Please upload a dataset to proceed.")
