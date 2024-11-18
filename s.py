@@ -159,7 +159,7 @@ def show_home(df):
     page_bg_img = '''
     <style>
     .stApp {
-        background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
+        background-image: url("https://w0.peakpx.com/wallpaper/440/206/HD-wallpaper-black-background-car-cars-vehicles.jpg");
         background-size: cover;
         background-attachment: fixed;
         background-position: center;
