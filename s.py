@@ -371,7 +371,10 @@ def show_team():
     - *Shamanth M:* 4AD22CI047
     - *Akash A S:* 4AD22CI400
  
-    """)
+    """)   
+st.balloons()
+
+
 
 # ---- FEEDBACK & CONTACT PAGE ----
 def show_feedback_and_contact():
