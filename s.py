@@ -427,7 +427,7 @@ if "df" not in st.session_state:
 
 if authenticate_user():
     st.sidebar.title("Menu")
-    menu = st.sidebar.radio("Select a page:", ["Home", "Prediction", "Analysis", "Team", "Feedback"])
+    menu = st.sidebar.radio("Select a page:", ["Home", "Prediction", "Model Comparission", "Analysis", "Team", "Feedback"])
 
     if st.session_state.df is not None:
         if menu == "Home":
