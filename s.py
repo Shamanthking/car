@@ -200,6 +200,7 @@ def show_home(df):
 # ---- PREDICTION PAGE ----
 def show_prediction(df):
     st.header("Car Price Prediction")
+    df = load_data()
     if df is not None:
         car_age = st.slider("Car Age", 0, 20, 10)
         km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
@@ -211,6 +212,7 @@ def show_prediction(df):
         fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
         seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
+       
 
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -223,9 +225,8 @@ def show_prediction(df):
             'max_power': [max_power],
             'mileage': [mileage],
             'engine_cc': [engine_cc],
-        })
-
-        # One-hot encoding for the categorical features
+           }) 
+# One-hot encoding for the categorical features
         categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
         categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
         user_data = pd.concat([user_data, categorical_encoded], axis=1)
@@ -239,6 +240,7 @@ def show_prediction(df):
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
     st.header("📊 Detailed Data Analysis")
+    df = load_data()
     if df is not None:
         st.write("""
         Explore the dataset through a variety of visualizations and analyses to gain deeper insights into 
