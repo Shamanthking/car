@@ -151,21 +151,23 @@ def load_data():
 
 
 # ---- HOME PAGE ----
+# ---- HOME PAGE ----
 def show_home(df):
     st.title("Welcome to the Car Price Prediction App 🚗")
+
     # ---- CUSTOM CSS FOR BACKGROUND ----
-page_bg_img = '''
-<style>
-.stApp {
-    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
-    color: white;
-}
-</style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
+    page_bg_img = '''
+    <style>
+    .stApp {
+        background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        color: white;
+    }
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
 
     st.write("""
     This application leverages the power of **machine learning** to analyze car features, uncover insights, 
