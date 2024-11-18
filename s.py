@@ -127,26 +127,67 @@ def save_to_excel(df, file_name):
 
 # ---- DATA LOADING ----
 @st.cache_data
-def load_data(file_path):
+def load_data():
+    """Loads and preprocesses the car dataset from a fixed path."""
     try:
+        file_path = 'data/carr.csv'
         df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
+        
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
+
+        # Encode categorical features
+        cat_cols = df.select_dtypes(include=['object']).columns
+        df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
+
+        # Impute missing values
+        imputer = SimpleImputer(strategy="mean")
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
+
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
 
-if "df" not in st.session_state:
-    st.session_state.df = load_data('data/carr.csv')
-
 
 # ---- HOME PAGE ----
 def show_home(df):
     st.title("Welcome to the Car Price Prediction App 🚗")
-    st.image("https://images.pexels.com/photos/10287567/pexels-photo-10287567.jpeg", caption="Accurate Car Price Predictions", use_container_width=True)
+    # ---- CUSTOM CSS FOR BACKGROUND ----
+page_bg_img = '''
+<style>
+.stApp {
+    background-image: url("https://i.pinimg.com/originals/65/3a/b9/653ab9dd1ef121f163c484d03322f1a9.jpg");
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    color: white;
+}
+</style>
+'''
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
     st.write("""
-    This application provides insights into car prices using machine learning models.  
-    You can upload your dataset, analyze car features, and predict selling prices instantly.
+    This application leverages the power of **machine learning** to analyze car features, uncover insights, 
+    and predict car prices with ease. Whether you're a car dealer, buyer, or data enthusiast, this tool 
+    is designed to provide you with actionable insights and accurate predictions.
+    """)
+    st.write("""
+    1. **Explore and Analyze Data**  
+       - Dive into the dataset with **interactive visualizations** and **metrics**:
+       - Understand trends in car features like mileage, engine size, and brand popularity.
+       - Identify key factors that influence car prices.
+    
+    2. **Predict Selling Prices**  
+       - Provide the required details such as car age, mileage, and engine specifications.  
+       - Instantly predict the expected selling price using powerful machine learning models.
+    
+    3. **Compare Machine Learning Models**  
+       - Evaluate multiple models, including Random Forest, Gradient Boosting, and Linear Regression, 
+         to see which performs best on your data.
+    
+    4. **Leave Feedback**  
+       - Share your experience with the app to help us improve!
     """)
 
     # Display initial insights
@@ -196,49 +237,92 @@ def show_prediction():
 
 # ---- DATA ANALYSIS ----
 def show_analysis():
-    st.header("Detailed Data Analysis")
+    st.header("📊 Detailed Data Analysis")
     df = load_data()
     if df is not None:
-        st.subheader("Brand Distribution")
+        st.write("""
+        Explore the dataset through a variety of visualizations and analyses to gain deeper insights into 
+        the factors affecting car prices. Each visualization is explained for better interpretation.
+        """)
+
+        # 1. Brand Distribution
+        st.subheader("🔍 Brand Distribution")
+        st.write("This bar chart shows the count of cars available for each brand in the dataset.")
         brand_counts = df['brand'].value_counts()
-        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
+        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, 
+                     labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
         st.plotly_chart(fig)
 
-        st.subheader("Fuel Type Distribution")
+        # 2. Fuel Type Distribution
+        st.subheader("⛽ Fuel Type Distribution")
+        st.write("A pie chart illustrating the distribution of cars by fuel type (e.g., Petrol, Diesel, CNG).")
         fuel_counts = df['fuel_type'].value_counts()
-        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, title="Fuel Type Distribution")
+        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, 
+                     title="Fuel Type Distribution", hole=0.4)
         st.plotly_chart(fig)
 
-        st.subheader("Distribution of Car Prices")
-        fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
+        # 3. Distribution of Car Prices
+        st.subheader("💰 Distribution of Car Prices")
+        st.write("This histogram shows the distribution of car prices, helping identify common price ranges.")
+        fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution", color_discrete_sequence=['#636EFA'])
         st.plotly_chart(fig)
-                # 4. Box Plot for Price by Transmission Type
-        st.subheader("Price by Transmission Type")
+
+        # 4. Box Plot for Price by Transmission Type
+        st.subheader("🚗 Price by Transmission Type")
+        st.write("A box plot showing how car prices vary between manual and automatic transmissions.")
         fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
         st.plotly_chart(fig)
 
         # 5. Scatter Plot - Price vs Mileage
-        st.subheader("Price vs Mileage")
+        st.subheader("📈 Price vs Mileage")
+        st.write("A scatter plot displaying the relationship between mileage and selling price. A trendline is included to identify patterns.")
         fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
         st.plotly_chart(fig)
 
         # 6. Heatmap of Correlation Matrix
-        st.subheader("Correlation Heatmap")
-        fig, ax = plt.subplots()
+        st.subheader("🔗 Correlation Heatmap")
+        st.write("This heatmap shows the correlation between numerical features. Strong positive or negative correlations are highlighted.")
+        fig, ax = plt.subplots(figsize=(10, 8))
         sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
         # 7. Line Plot - Average Price by Car Age
-        st.subheader("Average Price by Car Age")
+        st.subheader("📅 Average Price by Car Age")
+        st.write("A line chart showing how the average selling price changes with the age of the car.")
         if 'vehicle_age' in df.columns:
             age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
-            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age")
+            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age", markers=True)
             st.plotly_chart(fig)
 
         # 8. Violin Plot for Price by Seller Type
-        st.subheader("Price by Seller Type")
+        st.subheader("🛍️ Price by Seller Type")
+        st.write("A violin plot illustrating the distribution of car prices based on seller type, with box plot overlays.")
         fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
         st.plotly_chart(fig)
+
+        # 9. Average Mileage by Fuel Type
+        st.subheader("⚡ Average Mileage by Fuel Type")
+        st.write("A bar chart showing the average mileage for each fuel type. Useful for identifying efficiency trends.")
+        if 'mileage' in df.columns and 'fuel_type' in df.columns:
+            mileage_fuel = df.groupby('fuel_type')['mileage'].mean().reset_index()
+            fig = px.bar(mileage_fuel, x='fuel_type', y='mileage', color='fuel_type', 
+                         title="Average Mileage by Fuel Type", labels={'mileage': 'Average Mileage (kmpl)', 'fuel_type': 'Fuel Type'})
+            st.plotly_chart(fig)
+
+        # 10. Distribution of Engine Size
+        st.subheader("🏎️ Distribution of Engine Size")
+        st.write("A histogram showing the distribution of engine capacities across cars in the dataset.")
+        fig = px.histogram(df, x='engine', nbins=50, title="Engine Size Distribution", color_discrete_sequence=['#FFA15A'])
+        st.plotly_chart(fig)
+
+        # 11. Price vs Engine Size
+        st.subheader("⚙️ Price vs Engine Size")
+        st.write("A scatter plot highlighting the relationship between engine capacity and selling price. Trendline included for clarity.")
+        fig = px.scatter(df, x='engine', y='selling_price', trendline="ols", 
+                         title="Price vs. Engine Size", labels={'engine': 'Engine Size (CC)', 'selling_price': 'Selling Price'})
+        st.plotly_chart(fig)
+
+
 # ---- MODEL COMPARISON ----
 def show_model_comparison():
     st.header("Model Comparison")
