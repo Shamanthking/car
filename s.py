@@ -276,9 +276,11 @@ def show_model_comparison():
 def show_team():
     st.title("Meet the Team")
     st.write("""
-    - **John Doe**: Data Scientist  
-    - **Jane Smith**: Backend Developer  
-    - **Alan Turing**: ML Specialist  
+    - *Deekshith N:* 4AD22CI009
+    - *Prashanth Singh H S:* 4AD22CI040
+    - *Shamanth M:* 4AD22CI047
+    - *Akash A S:* 4AD22CI400
+ 
     """)
 
 # ---- FEEDBACK & CONTACT PAGE ----
@@ -312,18 +314,16 @@ def show_feedback_and_contact():
     st.write("""
     If you have any questions or need support, feel free to reach out to us:
 
-    - 📧 **Email**: support@carpriceprediction.com  
-    - 📞 **Phone**: +1-800-123-4567  
-    - 🌐 **Website**: [www.carpriceprediction.com](https://www.carpriceprediction.com)
+    - 📧 **Email**: shamanth2626@gmail.com  
+    - 📞 **Phone**: +8660847706  
+    - 🌐 **Website**: [www.carpriceprediction.com](https://q8pptv2nhseudi6hdkzzc3.streamlit.app)
     """)
 
     # Social Media Links
     st.write("Follow us on:")
     st.markdown("""
-    - [LinkedIn](https://www.linkedin.com)  
-    - [Twitter](https://twitter.com)  
-    - [Facebook](https://facebook.com)  
-    - [Instagram](https://instagram.com)
+    - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)🖇  
+    - [Instagram](https://www.instagram.com/shamanth_m_) 📸
     """)
 
 
@@ -340,7 +340,7 @@ if authenticate_user():
             show_prediction(st.session_state.df)
         elif menu == "Analysis":
             show_analysis(st.session_state.df)
-        elif menu == "Model Comparission"
+        elif menu == "Model Comparission":
             show_model_comparison()
         elif menu == "Team":
             show_team()
