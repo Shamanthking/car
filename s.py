@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 from openpyxl import Workbook
 from sklearn.preprocessing import LabelEncoder
 import os
+import statsmodels.api as sm
+
+
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
