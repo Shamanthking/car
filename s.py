@@ -155,77 +155,122 @@ def show_home(df):
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
 # ---- PREDICTION PAGE ----
-def show_prediction(df):
-    st.title("Car Price Prediction")
-    st.subheader("Input the car details below:")
+def show_prediction():
+    st.header("Car Price Prediction")
+    df = load_data()
+    if df is not None:
+        car_age = st.slider("Car Age", 0, 20, 10)
+        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
+        seats = st.selectbox("Seats", [2, 4, 5, 7])
+        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
+        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
+        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+        brand = st.selectbox("Brand", df['brand'].unique())
+        fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
+        seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
+        transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
+       
 
-    car_age = st.slider("Car Age", 0, 20, 5)
-    km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-    seats = st.selectbox("Seats", [2, 4, 5, 7])
-    max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-    mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-    engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-    
-    # Prepare dynamic user input
-    brand_cols = df.filter(regex='^brand_').columns
-    fuel_cols = df.filter(regex='^fuel_type_').columns
-    seller_cols = df.filter(regex='^seller_type_').columns
-    transmission_cols = df.filter(regex='^transmission_type_').columns
+        X = df.drop(columns=['selling_price'])
+        y = df['selling_price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    brand = st.selectbox("Brand", brand_cols)
-    fuel_type = st.selectbox("Fuel Type", fuel_cols)
-    seller_type = st.selectbox("Seller Type", seller_cols)
-    transmission = st.selectbox("Transmission", transmission_cols)
+        user_data = pd.DataFrame({
+            'car_age': [car_age],
+            'km_driven': [km_driven],
+            'seats': [seats],
+            'max_power': [max_power],
+            'mileage': [mileage],
+            'engine_cc': [engine_cc],
+           }) 
+# One-hot encoding for the categorical features
+        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
+        categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
+        user_data = pd.concat([user_data, categorical_encoded], axis=1)
+        user_data = user_data.reindex(columns=X.columns, fill_value=0)
 
-    # Prepare input
-    X = df.drop(columns=['selling_price'])
-    y = df['selling_price']
-    user_input = pd.DataFrame({
-        'vehicle_age': [car_age],
-        'km_driven': [km_driven],
-        'seats': [seats],
-        'max_power': [max_power],
-        'mileage': [mileage],
-        'engine': [engine_cc],
-        **{col: [0] for col in brand_cols.append(fuel_cols).append(seller_cols).append(transmission_cols)}
-    })
-    user_input[brand] = 1
-    user_input[fuel_type] = 1
-    user_input[seller_type] = 1
-    user_input[transmission] = 1
-
-    # Train model and predict
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X, y)
-    predicted_price = model.predict(user_input)
-
-    st.success(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+        predicted_price = model.predict(user_data)
+        st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
 
 # ---- DATA ANALYSIS ----
-def show_analysis(df):
-    st.title("Data Analysis")
+def show_analysis():
+    st.header("Detailed Data Analysis")
+    df = load_data()
+    if df is not None:
+        st.subheader("Brand Distribution")
+        brand_counts = df['brand'].value_counts()
+        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
+        st.plotly_chart(fig)
 
-    st.subheader("1. Correlation Heatmap")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
-    st.pyplot(fig)
+        st.subheader("Fuel Type Distribution")
+        fuel_counts = df['fuel_type'].value_counts()
+        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, title="Fuel Type Distribution")
+        st.plotly_chart(fig)
 
-    st.subheader("2. Feature Importance")
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    X = df.drop(columns=['selling_price'])
-    y = df['selling_price']
-    model.fit(X, y)
-    importance = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=False)
-    fig, ax = plt.subplots()
-    sns.barplot(x=importance, y=importance.index, ax=ax)
-    st.pyplot(fig)
+        st.subheader("Distribution of Car Prices")
+        fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution")
+        st.plotly_chart(fig)
+                # 4. Box Plot for Price by Transmission Type
+        st.subheader("Price by Transmission Type")
+        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
+        st.plotly_chart(fig)
 
-    # Additional analysis plots
-    st.subheader("3. Scatter Plot: Mileage vs Selling Price")
-    fig = px.scatter(df, x='mileage', y='selling_price', trendline='ols')
-    st.plotly_chart(fig)
+        # 5. Scatter Plot - Price vs Mileage
+        st.subheader("Price vs Mileage")
+        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
+        st.plotly_chart(fig)
 
-    # ... Add 7 more plots similarly ...
+        # 6. Heatmap of Correlation Matrix
+        st.subheader("Correlation Heatmap")
+        fig, ax = plt.subplots()
+        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
+
+        # 7. Line Plot - Average Price by Car Age
+        st.subheader("Average Price by Car Age")
+        if 'vehicle_age' in df.columns:
+            age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
+            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age")
+            st.plotly_chart(fig)
+
+        # 8. Violin Plot for Price by Seller Type
+        st.subheader("Price by Seller Type")
+        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
+        st.plotly_chart(fig)
+# ---- MODEL COMPARISON ----
+def show_model_comparison():
+    st.header("Model Comparison")
+    df = load_data()
+    if df is not None:
+        X = df.drop(columns=['selling_price'])
+        y = df['selling_price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        models = {
+            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
+            "Linear Regression": LinearRegression(),
+            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
+            "Decision Tree": DecisionTreeRegressor(random_state=42)
+        }
+
+        metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
+        for model_name, model in models.items():
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(y_test, y_pred)
+
+            metrics["Model"].append(model_name)
+            metrics["MSE"].append(mse)
+            metrics["RMSE"].append(rmse)
+            metrics["R²"].append(r2)
+
+        metrics_df = pd.DataFrame(metrics)
+        st.dataframe(metrics_df)
 
 # ---- TEAM PAGE ----
 def show_team():
@@ -295,6 +340,8 @@ if authenticate_user():
             show_prediction(st.session_state.df)
         elif menu == "Analysis":
             show_analysis(st.session_state.df)
+        elif menu == "Model Comparission"
+            show_model_comparison()
         elif menu == "Team":
             show_team()
         elif menu == "Feedback":
