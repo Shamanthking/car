@@ -174,7 +174,8 @@ def show_home(df):
     and predict car prices with ease. Whether you're a car dealer, buyer, or data enthusiast, this tool 
     is designed to provide you with actionable insights and accurate predictions.
     """)
-    st.write("""
+    st.subheader("📖 How to Use This App:")
+    st.markdown("""
     1. **Explore and Analyze Data**  
        - Dive into the dataset with **interactive visualizations** and **metrics**:
        - Understand trends in car features like mileage, engine size, and brand popularity.
