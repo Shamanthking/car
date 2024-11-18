@@ -423,7 +423,7 @@ if authenticate_user():
         elif menu == "Prediction":
             show_prediction(st.session_state.df)
         elif menu == "Analysis":
-    s        how_analysis(st.session_state.df)
+            show_analysis(st.session_state.df)
         elif menu == "Model Comparission":
             show_model_comparison()
         elif menu == "Team":
