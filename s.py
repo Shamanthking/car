@@ -12,6 +12,7 @@ import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 from openpyxl import Workbook
+from sklearn.preprocessing import LabelEncoder
 import os
 
 # ---- PAGE CONFIGURATION ----
