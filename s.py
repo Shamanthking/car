@@ -162,7 +162,7 @@ def show_home(df):
     page_bg_img = '''
     <style>
     .stApp {
-        background-image: url("https://source.unsplash.com/1600x900/?car,black.jpg");
+        background-image: url("https://img.freepik.com/free-vector/lightened-luxury-sedan-car-against-night-city-with-headlamps-rear-tail-lights-lit_1284-28804.jpg");
         background-size: cover;
         background-attachment: fixed;
         background-position: center;
