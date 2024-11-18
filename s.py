@@ -135,7 +135,7 @@ def load_data():
     """Loads and preprocesses the car dataset from a fixed path."""
     try:
         file_path = 'data/carr.csv'
-        df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
+        df= pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
 
@@ -419,6 +419,9 @@ def show_feedback_and_contact():
 
 
 # ---- MAIN APP ----
+if "df" not in st.session_state:
+    st.session_state.df = load_data()
+
 if authenticate_user():
     st.sidebar.title("Menu")
     menu = st.sidebar.radio("Select a page:", ["Home", "Prediction", "Analysis", "Team", "Feedback"])
@@ -438,4 +441,5 @@ if authenticate_user():
             show_feedback_and_contact()
     else:
         st.error("Data could not be loaded. Please check the dataset.")
+
 
