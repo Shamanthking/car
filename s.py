@@ -135,23 +135,29 @@ def load_data():
     """Loads and preprocesses the car dataset from a fixed path."""
     try:
         file_path = 'data/carr.csv'
-        df= pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
+        df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
+        # Clean column names
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
+        
         # Encode categorical features
         cat_cols = df.select_dtypes(include=['object']).columns
         df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-
+        
         # Impute missing values
         imputer = SimpleImputer(strategy="mean")
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
-
+        
+        # Feature Engineering
+        if 'mileage' in df.columns and 'engine' in df.columns:
+            df['mileage_per_cc'] = df['mileage'] / df['engine']
+        
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None
+
 
 
 # ---- HOME PAGE ----
@@ -212,34 +218,49 @@ def show_prediction(df):
         max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
         mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
         engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        brand = st.selectbox("Brand", df['brand'].unique())
+        brand = st.text_input("Enter Brand Name").strip().lower()
         fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
         seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
-       
 
+        # Prepare data for prediction
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        # Feature Engineering for user input
         user_data = pd.DataFrame({
             'car_age': [car_age],
             'km_driven': [km_driven],
             'seats': [seats],
             'max_power': [max_power],
             'mileage': [mileage],
-            'engine_cc': [engine_cc],
-           }) 
-# One-hot encoding for the categorical features
-        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
+            'engine': [engine_cc],
+            'mileage_per_cc': [mileage / engine_cc]
+        })
+
+        categorical_features = pd.DataFrame({
+            'brand': [brand],
+            'fuel_type': [fuel_type],
+            'seller_type': [seller_type],
+            'transmission': [transmission]
+        })
+
         categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
         user_data = pd.concat([user_data, categorical_encoded], axis=1)
         user_data = user_data.reindex(columns=X.columns, fill_value=0)
 
+        # Polynomial Features
+        from sklearn.preprocessing import PolynomialFeatures
+        poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
+        user_data = pd.DataFrame(poly.fit_transform(user_data), columns=poly.get_feature_names_out(X.columns))
+
+        # Model Training and Prediction
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
         predicted_price = model.predict(user_data)
         st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
@@ -338,29 +359,24 @@ def show_model_comparison():
         y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        models = {
-            "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
-            "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "Linear Regression": LinearRegression(),
-            "K-Neighbors Regressor": KNeighborsRegressor(n_neighbors=5),
-            "Decision Tree": DecisionTreeRegressor(random_state=42)
+        from sklearn.model_selection import GridSearchCV
+
+        # Hyperparameter tuning for Random Forest
+        rf_params = {
+            'n_estimators': [100, 200],
+            'max_depth': [10, 20, None],
+            'min_samples_split': [2, 5]
         }
+        grid_rf = GridSearchCV(RandomForestRegressor(random_state=42), rf_params, cv=5, scoring='r2')
+        grid_rf.fit(X_train, y_train)
+        best_rf = grid_rf.best_estimator_
 
-        metrics = {"Model": [], "MSE": [], "RMSE": [], "R²": []}
-        for model_name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
+        # Model Evaluation
+        y_pred = best_rf.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        st.write(f"Random Forest Model: MSE = {mse:.2f}, R² = {r2:.3f}")
 
-            metrics["Model"].append(model_name)
-            metrics["MSE"].append(mse)
-            metrics["RMSE"].append(rmse)
-            metrics["R²"].append(r2)
-
-        metrics_df = pd.DataFrame(metrics)
-        st.dataframe(metrics_df)
 
 # ---- TEAM PAGE ----
 def show_team():
