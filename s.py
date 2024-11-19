@@ -228,8 +228,16 @@ def show_prediction(df):
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
 
         # Prepare data for prediction
+        df = df.dropna(subset=['selling_price'])  # Ensure no missing target values
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
+
+        # Validate consistent shapes
+        if len(X) != len(y):
+            st.error("Mismatch in dataset rows. Please verify preprocessing steps.")
+            return
+
+        # Split data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Feature Engineering for user input
@@ -260,12 +268,16 @@ def show_prediction(df):
         X_poly = pd.DataFrame(poly.fit_transform(X), columns=poly.get_feature_names_out(X.columns))
         user_data_poly = pd.DataFrame(poly.transform(user_data), columns=poly.get_feature_names_out(X.columns))
 
+        # Validate feature shape consistency
+        if X_poly.shape[1] != user_data_poly.shape[1]:
+            st.error("Mismatch in feature dimensions between training data and user input.")
+            return
+
         # Model Training and Prediction
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_poly, y_train)
         predicted_price = model.predict(user_data_poly)
         st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
-
 
 
 
