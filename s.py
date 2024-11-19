@@ -218,7 +218,11 @@ def show_prediction(df):
         max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
         mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
         engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        brand = st.text_input("Enter Brand Name").strip().lower()
+        
+        # Select brand from dropdown
+        brand_options = df['brand'].unique()  # Fetch unique brand names
+        brand = st.selectbox("Select Brand", options=brand_options)
+        
         fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
         seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
         transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
@@ -260,6 +264,7 @@ def show_prediction(df):
         model.fit(X_train, y_train)
         predicted_price = model.predict(user_data)
         st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+
 
 
 # ---- DATA ANALYSIS ----
