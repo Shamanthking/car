@@ -254,16 +254,18 @@ def show_prediction(df):
         user_data = pd.concat([user_data, categorical_encoded], axis=1)
         user_data = user_data.reindex(columns=X.columns, fill_value=0)
 
-        # Polynomial Features
+        # Polynomial Features - Applied consistently to both training and user data
         from sklearn.preprocessing import PolynomialFeatures
         poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
-        user_data = pd.DataFrame(poly.fit_transform(user_data), columns=poly.get_feature_names_out(X.columns))
+        X_poly = pd.DataFrame(poly.fit_transform(X), columns=poly.get_feature_names_out(X.columns))
+        user_data_poly = pd.DataFrame(poly.transform(user_data), columns=poly.get_feature_names_out(X.columns))
 
         # Model Training and Prediction
         model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-        predicted_price = model.predict(user_data)
+        model.fit(X_poly, y_train)
+        predicted_price = model.predict(user_data_poly)
         st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+
 
 
 
