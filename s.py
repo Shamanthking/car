@@ -408,7 +408,7 @@ def show_feedback_and_contact():
     If you have any questions or need support, feel free to reach out to us:
 
     - 📧 *Email*: shamanth2626@gmail.com  
-    - 📞 *Phone*: +8660847706  
+    - 📞 *Phone*: +*********************  
     - 🌐 *Website*: [www.carpriceprediction.com](https://q8pptv2nhseudi6hdkzzc3.streamlit.app)
     """)
 
