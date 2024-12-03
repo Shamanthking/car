@@ -12,7 +12,7 @@ import plotly.express as px
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
-# ---- CUSTOM CSS FOR BACKGROUND ----
+# ---- CUSTOM CSS FOR BACKGROUND AND DESIGN ----
 page_bg_img = '''
 <style>
 .stApp {
@@ -22,6 +22,10 @@ page_bg_img = '''
     background-position: center;
     color: white;
 }
+.sidebar .sidebar-content {
+    background-color: #333333;
+    color: white;
+}
 </style>
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
@@ -29,7 +33,7 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    """Loads and preprocesses the preprocessed car dataset."""
+    """Loads and preprocesses the car dataset."""
     try:
         file_path = 'data/carr.csv'
         df = pd.read_csv(file_path)
@@ -40,41 +44,42 @@ def load_data():
 
 # ---- HOMEPAGE ----
 def show_home():
-    st.title("Car Price Prediction Web Application")
+    st.title("🚗 Car Price Prediction Web Application")
     st.subheader("Predict the price of used cars based on various features")
     st.write("""
-        This Web Application is designed to help users estimate the price of used cars based on features like car age, kilometers driven, fuel type, and more.
-        By leveraging machine learning models, we provide predictions to assist users in making informed decisions when buying or selling used cars.
+        This Web Application leverages machine learning models to estimate the price of used cars based on input features like age, kilometers driven, engine capacity, and more. 
+        Explore different models and gain insights to make informed decisions when buying or selling used cars.
     """)
 
 # ---- TEAM SECTION ----
 def show_team():
-    st.title("Our Team")
-    st.write("Meet the dedicated contributors who developed this application:")
+    st.title("👥 Our Team")
     st.write("""
-    - *Deekshith N:* 4AD22CI009
-    - *Prashanth Singh H S:* 4AD22CI040
-    - *Shamanth M:* 4AD22CI047
-    - *Akash A S:* 4AD22CI400
+        Meet the dedicated contributors who developed this application:
+        - **Deekshith N:** 4AD22CI009  
+        - **Prashanth Singh H S:** 4AD22CI040  
+        - **Shamanth M:** 4AD22CI047  
+        - **Akash A S:** 4AD22CI400
     """)
     st.balloons()
 
 # ---- PREDICTION PAGE ----
 def show_prediction():
-    st.title("Car Price Prediction")
+    st.title("🔍 Car Price Prediction")
     df = load_data()
     if df is not None:
         # Input fields for prediction
-        car_age = st.slider("Car Age", int(df['car_age'].min()), int(df['car_age'].max()), 5)
-        km_driven = st.number_input("Kilometers Driven", int(df['km_driven'].min()), int(df['km_driven'].max()), 50000)
-        seats = st.selectbox("Seats", sorted(df['seats'].unique()))
-        max_power = st.number_input("Max Power (in bhp)", float(df['max_power'].min()), float(df['max_power'].max()), 100.0)
-        mileage = st.number_input("Mileage (kmpl)", float(df['mileage'].min()), float(df['mileage'].max()), 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", float(df['engine_cc'].min()), float(df['engine_cc'].max()), 1200.0)
-        brand = st.selectbox("Brand", df['brand'].unique())
-        fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
-        seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
-        transmission = st.selectbox("Transmission", df['transmission'].unique())
+        st.sidebar.header("Input Features")
+        car_age = st.sidebar.slider("Car Age", int(df['car_age'].min()), int(df['car_age'].max()), 5)
+        km_driven = st.sidebar.number_input("Kilometers Driven", int(df['km_driven'].min()), int(df['km_driven'].max()), 50000)
+        seats = st.sidebar.selectbox("Seats", sorted(df['seats'].unique()))
+        max_power = st.sidebar.number_input("Max Power (in bhp)", float(df['max_power'].min()), float(df['max_power'].max()), 100.0)
+        mileage = st.sidebar.number_input("Mileage (kmpl)", float(df['mileage'].min()), float(df['mileage'].max()), 20.0)
+        engine_cc = st.sidebar.number_input("Engine Capacity (CC)", float(df['engine_cc'].min()), float(df['engine_cc'].max()), 1200.0)
+        brand = st.sidebar.selectbox("Brand", df['brand'].unique())
+        fuel_type = st.sidebar.selectbox("Fuel Type", df['fuel_type'].unique())
+        seller_type = st.sidebar.selectbox("Seller Type", df['seller_type'].unique())
+        transmission = st.sidebar.selectbox("Transmission", df['transmission'].unique())
 
         # Prepare input data for prediction
         input_data = {
@@ -103,7 +108,7 @@ def show_prediction():
 
 # ---- DATA ANALYSIS ----
 def show_analysis():
-    st.title("Detailed Data Analysis")
+    st.title("📊 Data Analysis")
     st.write("Explore the data insights to understand car price trends.")
     df = load_data()
     if df is not None:
@@ -119,7 +124,7 @@ def show_analysis():
 
 # ---- MODEL COMPARISON ----
 def show_model_comparison():
-    st.title("Model Comparison")
+    st.title("⚙️ Model Comparison")
     df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
@@ -152,22 +157,15 @@ def show_model_comparison():
 
 # ---- FEEDBACK & CONTACT ----
 def show_feedback_contact():
-    st.title("We Value Your Feedback!")
+    st.title("💬 Feedback & Contact")
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
     feedback = st.text_area("Questions or suggestions? Let us know.")
     
     if st.button("Submit"):
-        feedback_data = {
-            "rating": rating,
-            "feedback": feedback
-        }
         st.write("Thank you for your feedback!")
-        st.json(feedback_data)
 
     st.subheader("Contact Us")
-    st.write("If you have further questions or require assistance, reach out at:")
     st.write("Email: support@carpredictionapp.com")
-    st.write("Phone: +123-456-7890")
 
 # ---- NAVIGATION ----
 menu_options = {
