@@ -7,11 +7,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
@@ -33,23 +29,10 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 # ---- LOAD DATA ----
 @st.cache_data
 def load_data():
-    """Loads and preprocesses the car dataset from a fixed path."""
+    """Loads and preprocesses the preprocessed car dataset."""
     try:
-        file_path = 'data/carr.csv'
-        df = pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
-        
-        # Standardize column names
-        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
-        # Encode categorical features (except brand for better display)
-        cat_cols = df.select_dtypes(include=['object']).columns.difference(['brand'])
-        df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-
-        # Impute missing values
-        imputer = SimpleImputer(strategy="mean")
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
-
+        file_path = 'preprocessed_car_dekho_data.csv'
+        df = pd.read_csv(file_path)
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -59,13 +42,12 @@ def load_data():
 def show_home():
     st.title("Car Price Prediction Web Application")
     st.subheader("Predict the price of used cars based on various features")
-
     st.write("""
-        This Web Application is designed to help users estimate the price of used cars based on features like make, model, year, mileage, and more.
+        This Web Application is designed to help users estimate the price of used cars based on features like car age, kilometers driven, fuel type, and more.
         By leveraging machine learning models, we provide predictions to assist users in making informed decisions when buying or selling used cars.
     """)
 
-# ---- TEAM SECTION WITH BALLOONS ----
+# ---- TEAM SECTION ----
 def show_team():
     st.title("Our Team")
     st.write("Meet the dedicated contributors who developed this application:")
@@ -83,40 +65,37 @@ def show_prediction():
     df = load_data()
     if df is not None:
         # Input fields for prediction
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        seats = st.selectbox("Seats", [2, 4, 5, 7])
-        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
+        car_age = st.slider("Car Age", int(df['car_age'].min()), int(df['car_age'].max()), 5)
+        km_driven = st.number_input("Kilometers Driven", int(df['km_driven'].min()), int(df['km_driven'].max()), 50000)
+        seats = st.selectbox("Seats", sorted(df['seats'].unique()))
+        max_power = st.number_input("Max Power (in bhp)", float(df['max_power'].min()), float(df['max_power'].max()), 100.0)
+        mileage = st.number_input("Mileage (kmpl)", float(df['mileage'].min()), float(df['mileage'].max()), 20.0)
+        engine_cc = st.number_input("Engine Capacity (CC)", float(df['engine_cc'].min()), float(df['engine_cc'].max()), 1200.0)
         brand = st.selectbox("Brand", df['brand'].unique())
-        fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
-        seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
-        transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
+        fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
+        seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
+        transmission = st.selectbox("Transmission", df['transmission'].unique())
 
-        # Preparing input data
+        # Prepare input data for prediction
+        input_data = {
+            'car_age': car_age,
+            'km_driven': km_driven,
+            'seats': seats,
+            'max_power': max_power,
+            'mileage': mileage,
+            'engine_cc': engine_cc,
+            'brand': brand,
+            'fuel_type': fuel_type,
+            'seller_type': seller_type,
+            'transmission': transmission
+        }
+        user_data = pd.DataFrame([input_data])
+        user_data = pd.get_dummies(user_data).reindex(columns=df.drop(columns=['selling_price']).columns, fill_value=0)
+
+        # Train and predict using Random Forest model
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        user_data = pd.DataFrame({
-            'car_age': [car_age],
-            'km_driven': [km_driven],
-            'seats': [seats],
-            'max_power': [max_power],
-            'mileage': [mileage],
-            'engine_cc': [engine_cc],
-            'brand': [brand],
-            'fuel_type': [fuel_type],
-            'seller_type': [seller_type],
-            'transmission': [transmission]
-        })
-
-        # One-hot encoding for the categorical features
-        user_data = pd.get_dummies(user_data, columns=['brand', 'fuel_type', 'seller_type', 'transmission'], drop_first=True)
-        user_data = user_data.reindex(columns=X.columns, fill_value=0)
-
-        # Train and predict using Random Forest model
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
         predicted_price = model.predict(user_data)
@@ -129,7 +108,13 @@ def show_analysis():
     df = load_data()
     if df is not None:
         st.subheader("Brand Distribution")
-        fig = px.bar(df['brand'].value_counts(), labels={'x': 'Brand', 'y': 'Count'})
+        brand_counts = df['brand'].value_counts()
+        fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, labels={'x': 'Brand', 'y': 'Count'})
+        st.plotly_chart(fig)
+
+        st.subheader("Fuel Type Distribution")
+        fuel_counts = df['fuel_type'].value_counts()
+        fig = px.pie(fuel_counts, names=fuel_counts.index, values=fuel_counts.values)
         st.plotly_chart(fig)
 
 # ---- MODEL COMPARISON ----
@@ -196,4 +181,3 @@ menu_options = {
 
 selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
 menu_options[selected_menu]()
-\
