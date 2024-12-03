@@ -31,7 +31,7 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 def load_data():
     """Loads and preprocesses the preprocessed car dataset."""
     try:
-        file_path = '/data/carr.csv'
+        file_path = 'data/carr.csv'
         df = pd.read_csv(file_path)
         return df
     except Exception as e:
