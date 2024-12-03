@@ -35,7 +35,7 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 @st.cache_data
 def load_data():
     try:
-        file_path = '/mnt/data/preprocessed_car_dekho_data.csv'
+        file_path = 'data/carr.csv'
         df = pd.read_csv(file_path)
         df['car_age'] = 2024 - df['Model_Year']  # Calculate car age
         return df
