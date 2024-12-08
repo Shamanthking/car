@@ -23,112 +23,82 @@ import statsmodels.api as sm
 # ---- PAGE CONFIGURATION ----
 st.set_page_config(page_title="Car Price Prediction", page_icon="🚗", layout="wide")
 
+# ---- CONSTANTS ----
+USERS_FILE = 'users.xlsx'
+FEEDBACK_FILE = 'feedback.xlsx'
+
+# ---- UTILITIES ----
+def create_excel_file_if_missing(file_name, columns):
+    """Creates an empty Excel file with specified columns if it doesn't exist."""
+    if not os.path.exists(file_name):
+        wb = Workbook()
+        ws = wb.active
+        ws.append(columns)
+        wb.save(file_name)
+
+def save_dataframe_to_excel(df, file_name):
+    """Saves a DataFrame to an Excel file, handling corruption issues."""
+    try:
+        df.to_excel(file_name, index=False, engine="openpyxl")
+    except Exception as e:
+        if os.path.exists(file_name):
+            os.remove(file_name)  # Remove corrupted file
+        df.to_excel(file_name, index=False, engine="openpyxl")
+
 # ---- FILE SETUP ----
-users_file = 'users.xlsx'
-feedback_file = 'feedback.xlsx'
-
-# Helper function to create Excel files if they do not exist
-def create_empty_excel(file_name, columns):
-    wb = Workbook()
-    ws = wb.active
-    ws.append(columns)
-    wb.save(file_name)
-
-# Ensure required files exist
-for file, columns in [(users_file, ["username", "email", "password"]),
-                      (feedback_file, ["rating", "comments"])]:
-    if not os.path.exists(file):
-        create_empty_excel(file, columns)
-    else:
-        try:
-            pd.read_excel(file, engine="openpyxl")
-        except Exception:
-            os.remove(file)
-            create_empty_excel(file, columns)
+create_excel_file_if_missing(USERS_FILE, ["username", "email", "password"])
+create_excel_file_if_missing(FEEDBACK_FILE, ["rating", "comments"])
 
 # ---- AUTHENTICATION ----
 def add_user(username, email, password):
+    """Registers a new user."""
     try:
-        # Check if users.xlsx exists
-        if os.path.exists(users_file):
-            # Load existing data
-            users_df = pd.read_excel(users_file, engine="openpyxl")
-        else:
-            # Create an empty DataFrame with the required columns
-            users_df = pd.DataFrame(columns=["username", "email", "password"])
-
-        # Check if username or email already exists
-        if (users_df['username'] == username).any():
+        users_df = pd.read_excel(USERS_FILE, engine="openpyxl")
+        if username in users_df['username'].values:
             st.sidebar.error("This username is already taken.")
             return
-        if (users_df['email'] == email).any():
+        if email in users_df['email'].values:
             st.sidebar.error("This email is already registered.")
             return
 
-        # Append new user data
         new_user = pd.DataFrame([[username, email, password]], columns=["username", "email", "password"])
         updated_users_df = pd.concat([users_df, new_user], ignore_index=True)
-
-        # Save back to the Excel file
-        updated_users_df.to_excel(users_file, index=False, engine="openpyxl")
+        save_dataframe_to_excel(updated_users_df, USERS_FILE)
         st.sidebar.success("User registered successfully. Please log in.")
-
     except Exception as e:
-        st.sidebar.error(f"Error while registering user: {e}")
-
+        st.sidebar.error(f"Error during registration: {e}")
 
 def authenticate_user():
+    """Handles user authentication."""
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
     st.sidebar.title("Authentication")
-    auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"], key="auth_option")
+    auth_option = st.sidebar.radio("Choose Option", ["Login", "Register"])
 
     if auth_option == "Login":
-        username = st.sidebar.text_input("Username", key="login_username")
-        password = st.sidebar.text_input("Password", type="password", key="login_password")
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
         if st.sidebar.button("Login"):
-            try:
-                if os.path.exists(users_file):
-                    users_df = pd.read_excel(users_file, engine="openpyxl")
-                else:
-                    st.sidebar.error("No users found. Please register first.")
-                    return
-
-                # Validate credentials
-                user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
-                if not user.empty:
-                    st.sidebar.success(f"Welcome, {username}!")
-                    st.session_state.authenticated = True
-                    st.session_state.username = username
-                else:
-                    st.sidebar.error("Invalid username or password.")
-            except Exception as e:
-                st.sidebar.error(f"Error while authenticating: {e}")
-
+            users_df = pd.read_excel(USERS_FILE, engine="openpyxl")
+            user = users_df[(users_df['username'] == username) & (users_df['password'] == password)]
+            if not user.empty:
+                st.sidebar.success(f"Welcome, {username}!")
+                st.session_state.authenticated = True
+                st.session_state.username = username
+            else:
+                st.sidebar.error("Invalid credentials.")
     elif auth_option == "Register":
-        new_username = st.sidebar.text_input("Create Username", key="register_username")
-        email = st.sidebar.text_input("Email", key="register_email")
-        new_password = st.sidebar.text_input("Create Password", type="password", key="register_password")
-        confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
+        username = st.sidebar.text_input("Username")
+        email = st.sidebar.text_input("Email")
+        password = st.sidebar.text_input("Password", type="password")
+        confirm_password = st.sidebar.text_input("Confirm Password", type="password")
         if st.sidebar.button("Register"):
-            if new_password == confirm_password:
-                add_user(new_username, email, new_password)
+            if password == confirm_password:
+                add_user(username, email, password)
             else:
                 st.sidebar.error("Passwords do not match.")
-
     return st.session_state.authenticated
-
-
-def save_to_excel(df, file_name):
-    try:
-        df.to_excel(file_name, index=False, engine="openpyxl")
-    except Exception as e:
-        st.error(f"Error while saving data: {e}. Retrying...")
-        if os.path.exists(file_name):
-            os.remove(file_name)  # Delete the file if corrupted
-        df.to_excel(file_name, index=False, engine="openpyxl")
-
 
 
 
