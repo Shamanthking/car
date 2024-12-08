@@ -179,8 +179,7 @@ def show_home(df):
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
-# ---- LOAD MODEL ----
-model = pk.load(open('ProcessedCar.pkl', 'rb'))
+
 
 # ---- LOAD DATA FUNCTION ----
 def load_data():
@@ -195,6 +194,7 @@ def load_data():
 # ---- PREDICTION PAGE FUNCTION ----
 def show_prediction(df):
     st.title("Car Price Prediction 🚗")
+    model = pk.load(open('ProcessedCar.pkl', 'rb'))
 
     # ---- USER INPUT FORM ----
     name = st.selectbox("Select Car Brand", df['brand'].unique())
