@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import pickel as pk
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
@@ -179,7 +180,7 @@ def show_home(df):
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
 # ---- LOAD MODEL ----
-model = pk.load(open('model.pkl', 'rb'))
+model = pk.load(open('ProcessedCar.pkl', 'rb'))
 
 # ---- LOAD DATA ----
 db = pd.read_csv('Cardetails.csv')
