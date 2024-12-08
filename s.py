@@ -183,7 +183,7 @@ def show_home(df):
 model = pk.load(open('ProcessedCar.pkl', 'rb'))
 
 # ---- LOAD DATA ----
-db = pd.read_csv('Cardetails.csv')
+db = pd.read_csv('data/Processed_Cardetails.csv')
 
 # Extract brand name from the 'name' column
 def get_brand_name(car_name):
