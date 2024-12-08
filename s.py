@@ -201,16 +201,33 @@ def show_home(df):
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
+import streamlit as st
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+
 # ---- PREDICTION PAGE ----
 def show_prediction(df):
     st.header("Car Price Prediction")
 
     if df is not None:
+        # Extract brand from name if 'brand' doesn't exist
+        if 'brand' not in df.columns:
+            df['brand'] = df['name'].apply(lambda x: str(x).split(' ')[0])
+
+        # Convert 'year' to 'car_age'
+        if 'year' in df.columns:
+            current_year = pd.Timestamp.now().year
+            df['car_age'] = current_year - df['year']
+        else:
+            st.error("Year column missing in dataset.")
+            return
+
         # User inputs
         brand = st.selectbox("Select Car Brand", df['brand'].unique())
         car_age = st.slider("Car Age (Years)", 0, 30, 5)
         km_driven = st.slider("Kilometers Driven", 0, 300000, 50000)
-        fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
+        fuel_type = st.selectbox("Fuel Type", df['fuel'].unique())
         seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
         transmission = st.selectbox("Transmission", df['transmission'].unique())
         mileage = st.slider("Mileage (km/l)", 5.0, 40.0, 20.0)
@@ -223,7 +240,7 @@ def show_prediction(df):
             'brand': [brand],
             'car_age': [car_age],
             'km_driven': [km_driven],
-            'fuel_type': [fuel_type],
+            'fuel': [fuel_type],
             'seller_type': [seller_type],
             'transmission': [transmission],
             'mileage': [mileage],
@@ -236,17 +253,19 @@ def show_prediction(df):
         st.write(input_data)
 
         # Encode categorical features
-        input_data['fuel_type'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
+        input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
         input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
         input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
         input_data['brand'].replace(df['brand'].unique(), range(1, len(df['brand'].unique()) + 1), inplace=True)
 
-        # Ensure column order matches the model's training data
-        X = df.drop(columns=['selling_price'])
+        # Prepare dataset for training
+        y = df['selling_price']
+        X = df.drop(columns=['selling_price', 'name', 'year'], errors='ignore')
+
+        # Ensure input_data columns match X
         input_data = input_data.reindex(columns=X.columns, fill_value=0)
 
         # Train the model
-        y = df['selling_price']
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
@@ -255,6 +274,8 @@ def show_prediction(df):
         if st.button("Predict"):
             predicted_price = model.predict(input_data)
             st.write(f"### Predicted Car Price: ₹{predicted_price[0]:,.2f}")
+
+
 
 
 # ---- DATA ANALYSIS ----
