@@ -129,29 +129,6 @@ def save_to_excel(df, file_name):
 
 
 
-# ---- DATA LOADING ----
-@st.cache_data
-def load_data():
-    """Loads and preprocesses the car dataset from a fixed path."""
-    try:
-        file_path = 'data/Processed_Cardetails.csv'
-        df= pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
-        
-        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-
-        # Encode categorical features
-        cat_cols = df.select_dtypes(include=['object']).columns
-        df[cat_cols] = df[cat_cols].apply(LabelEncoder().fit_transform)
-
-        # Impute missing values
-        imputer = SimpleImputer(strategy="mean")
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
-
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return None
 
 
 # ---- HOME PAGE ----
@@ -201,80 +178,56 @@ def show_home(df):
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
-import streamlit as st
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+# ---- LOAD MODEL ----
+model = pk.load(open('model.pkl', 'rb'))
+
+# ---- LOAD DATA ----
+db = pd.read_csv('Cardetails.csv')
+
+# Extract brand name from the 'name' column
+def get_brand_name(car_name):
+    return car_name.split(' ')[0].strip()
+
+db['brand'] = db['name'].apply(get_brand_name)
 
 # ---- PREDICTION PAGE ----
-def show_prediction(df):
-    st.header("Car Price Prediction")
+# ---- USER INPUT ----
+name = st.selectbox("Select Car Brand", db['brand'].unique())
+year = st.slider("Select Manufacture Year", 1994, 2024)
+km_driven = st.slider("Kilometers Driven", 11, 200000)
+fuel = st.selectbox("Fuel Type", db['fuel'].unique())
+seller_type = st.selectbox("Type of Seller", db['seller_type'].unique())
+mileage = st.slider("Car Mileage (km/l)", 10, 40)
+owner = st.selectbox("Type of Owner", db['owner'].unique())
+engine = st.slider("Engine Capacity (CC)", 700, 5000)
+max_power = st.slider("Max Power (BHP)", 0, 200)
+transmission = st.selectbox("Type of Transmission", db['transmission'].unique())
+seats = st.slider("Number of Seats", 2, 10)
 
-    if df is not None:
-        # Extract brand from name if 'brand' doesn't exist
-        if 'brand' not in df.columns:
-            df['brand'] = df['name'].apply(lambda x: str(x).split(' ')[0])
+# ---- PREPARE INPUT DATA ----
+if st.button("Predict"):
+    # Create a DataFrame with user input
+    input_data = pd.DataFrame([[
+        name, year, km_driven, fuel, seller_type, transmission, owner, mileage, engine, max_power, seats
+    ]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'mileage', 'engine', 'max_power', 'seats'])
 
-        # Convert 'year' to 'car_age'
-        if 'year' in df.columns:
-            current_year = pd.Timestamp.now().year
-            df['car_age'] = current_year - df['year']
-        else:
-            st.error("Year column missing in dataset.")
-            return
+    # Display input data
+    st.write("### User Input Data")
+    st.write(input_data)
 
-        # User inputs
-        brand = st.selectbox("Select Car Brand", df['brand'].unique())
-        car_age = st.slider("Car Age (Years)", 0, 30, 5)
-        km_driven = st.slider("Kilometers Driven", 0, 300000, 50000)
-        fuel_type = st.selectbox("Fuel Type", df['fuel'].unique())
-        seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
-        transmission = st.selectbox("Transmission", df['transmission'].unique())
-        mileage = st.slider("Mileage (km/l)", 5.0, 40.0, 20.0)
-        engine = st.slider("Engine Capacity (CC)", 500, 5000, 1200)
-        max_power = st.slider("Max Power (BHP)", 50, 500, 100)
-        seats = st.slider("Number of Seats", 2, 10, 5)
+    # Encode categorical features
+    input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner',
+                                 'Fourth & Above Owner', 'Test Drive Car'], [1, 2, 3, 4, 5], inplace=True)
+    input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
+    input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
+    input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
+    input_data['name'].replace(db['brand'].unique(), range(1, len(db['brand'].unique()) + 1), inplace=True)
 
-        # Create input DataFrame
-        input_data = pd.DataFrame({
-            'brand': [brand],
-            'car_age': [car_age],
-            'km_driven': [km_driven],
-            'fuel': [fuel_type],
-            'seller_type': [seller_type],
-            'transmission': [transmission],
-            'mileage': [mileage],
-            'engine': [engine],
-            'max_power': [max_power],
-            'seats': [seats]
-        })
+    # ---- PREDICT CAR PRICE ----
+    car_price = model.predict(input_data)
 
-        st.write("### User Input Data")
-        st.write(input_data)
-
-        # Encode categorical features
-        input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
-        input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
-        input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
-        input_data['brand'].replace(df['brand'].unique(), range(1, len(df['brand'].unique()) + 1), inplace=True)
-
-        # Prepare dataset for training
-        y = df['selling_price']
-        X = df.drop(columns=['selling_price', 'name', 'year'], errors='ignore')
-
-        # Ensure input_data columns match X
-        input_data = input_data.reindex(columns=X.columns, fill_value=0)
-
-        # Train the model
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-
-        # Predict the car price
-        if st.button("Predict"):
-            predicted_price = model.predict(input_data)
-            st.write(f"### Predicted Car Price: ₹{predicted_price[0]:,.2f}")
-
+    # Display the predicted price
+    st.write(f"### Predicted Car Price: ₹{int(car_price[0]):,} INR")
 
 
 
