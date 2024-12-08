@@ -182,53 +182,49 @@ def show_home(df):
 # ---- LOAD MODEL ----
 model = pk.load(open('ProcessedCar.pkl', 'rb'))
 
-# ---- LOAD DATA ----
-db = pd.read_csv('data/Processed_Cardetails.csv')
+# ---- LOAD DATA FUNCTION ----
+def load_data():
+    try:
+        df = pd.read_csv('data/Processed_Cardetails.csv')
+        df['brand'] = df['name'].apply(get_brand_name)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return None
 
-# Extract brand name from the 'name' column
-def get_brand_name(car_name):
-    return car_name.split(' ')[0].strip()
+# ---- PREDICTION PAGE FUNCTION ----
+def show_prediction(df):
+    st.title("Car Price Prediction 🚗")
 
-db['brand'] = db['name'].apply(get_brand_name)
+    # ---- USER INPUT FORM ----
+    name = st.selectbox("Select Car Brand", df['brand'].unique())
+    year = st.slider("Select Manufacture Year", 1994, 2024)
+    km_driven = st.slider("Kilometers Driven", 11, 200000)
+    fuel = st.selectbox("Fuel Type", df['fuel'].unique())
+    seller_type = st.selectbox("Type of Seller", df['seller_type'].unique())
+    mileage = st.slider("Car Mileage (km/l)", 10, 40)
+    owner = st.selectbox("Type of Owner", df['owner'].unique())
+    engine = st.slider("Engine Capacity (CC)", 700, 5000)
+    max_power = st.slider("Max Power (BHP)", 0, 200)
+    transmission = st.selectbox("Type of Transmission", df['transmission'].unique())
+    seats = st.slider("Number of Seats", 2, 10)
 
-# ---- PREDICTION PAGE ----
-# ---- USER INPUT ----
-name = st.selectbox("Select Car Brand", db['brand'].unique())
-year = st.slider("Select Manufacture Year", 1994, 2024)
-km_driven = st.slider("Kilometers Driven", 11, 200000)
-fuel = st.selectbox("Fuel Type", db['fuel'].unique())
-seller_type = st.selectbox("Type of Seller", db['seller_type'].unique())
-mileage = st.slider("Car Mileage (km/l)", 10, 40)
-owner = st.selectbox("Type of Owner", db['owner'].unique())
-engine = st.slider("Engine Capacity (CC)", 700, 5000)
-max_power = st.slider("Max Power (BHP)", 0, 200)
-transmission = st.selectbox("Type of Transmission", db['transmission'].unique())
-seats = st.slider("Number of Seats", 2, 10)
+    if st.button("Predict"):
+        # Create input DataFrame
+        input_data = pd.DataFrame([[
+            name, year, km_driven, fuel, seller_type, transmission, owner, mileage, engine, max_power, seats
+        ]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'mileage', 'engine', 'max_power', 'seats'])
 
-# ---- PREPARE INPUT DATA ----
-if st.button("Predict"):
-    # Create a DataFrame with user input
-    input_data = pd.DataFrame([[
-        name, year, km_driven, fuel, seller_type, transmission, owner, mileage, engine, max_power, seats
-    ]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'mileage', 'engine', 'max_power', 'seats'])
+        # Encode categorical features
+        input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'], [1, 2, 3, 4, 5], inplace=True)
+        input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
+        input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
+        input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
+        input_data['name'].replace(df['brand'].unique(), range(1, len(df['brand'].unique()) + 1), inplace=True)
 
-    # Display input data
-    st.write("### User Input Data")
-    st.write(input_data)
-
-    # Encode categorical features
-    input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner',
-                                 'Fourth & Above Owner', 'Test Drive Car'], [1, 2, 3, 4, 5], inplace=True)
-    input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
-    input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
-    input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
-    input_data['name'].replace(db['brand'].unique(), range(1, len(db['brand'].unique()) + 1), inplace=True)
-
-    # ---- PREDICT CAR PRICE ----
-    car_price = model.predict(input_data)
-
-    # Display the predicted price
-    st.write(f"### Predicted Car Price: ₹{int(car_price[0]):,} INR")
+        # Predict the car price
+        car_price = model.predict(input_data)
+        st.write(f"### Predicted Car Price: ₹{int(car_price[0]):,} INR")
 
 
 
