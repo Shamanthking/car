@@ -7,3 +7,5 @@ numpy
 seaborn
 matplotlib
 statsmodels
+sklearn
+streamlit_lottie
