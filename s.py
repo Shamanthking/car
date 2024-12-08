@@ -134,7 +134,7 @@ def save_to_excel(df, file_name):
 def load_data():
     """Loads and preprocesses the car dataset from a fixed path."""
     try:
-        file_path = 'data/carr.csv'
+        file_path = 'data/Processed_Cardetails.csv'
         df= pd.read_csv(file_path, encoding='utf-8', on_bad_lines='skip')
         
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
