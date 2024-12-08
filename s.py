@@ -197,6 +197,7 @@ def show_prediction(df):
     model = pk.load(open('ProcessedCar.pkl', 'rb'))
 
     # ---- USER INPUT FORM ----
+    db['name'] = db['name'].apply(get_brand_name)
     name = st.selectbox("Select Car Brand", df['brand'].unique())
     year = st.slider("Select Manufacture Year", 1994, 2024)
     km_driven = st.slider("Kilometers Driven", 11, 200000)
@@ -210,17 +211,17 @@ def show_prediction(df):
     seats = st.slider("Number of Seats", 2, 10)
 
     if st.button("Predict"):
-        # Create input DataFrame
-        input_data = pd.DataFrame([[
-            name, year, km_driven, fuel, seller_type, transmission, owner, mileage, engine, max_power, seats
-        ]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'mileage', 'engine', 'max_power', 'seats'])
-
-        # Encode categorical features
-        input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'], [1, 2, 3, 4, 5], inplace=True)
-        input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
-        input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
-        input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
-        input_data['name'].replace(df['brand'].unique(), range(1, len(df['brand'].unique()) + 1), inplace=True)
+  input_data=pd.DataFrame([[name,year,km_driven,fuel,seller_type,transmission,owner,mileage,engine,max_power,seats]],columns=['name','year','km_driven','fuel','seller_type','transmission','owner','mileage','engine','max_power','seats'])
+  st.write(input_data)
+  input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner',
+       'Fourth & Above Owner', 'Test Drive Car'],[1,2,3,4,5],inplace=True)
+  input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'],[1,2,3,4],inplace=True)
+  input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'],[1,2,3],inplace=True)
+  input_data['transmission'].replace(['Manual',"Automatic"],[1,2],inplace=True)
+  input_data['name'].replace(['Maruti', 'Skoda', 'Honda', 'Hyundai' ,'Toyota' ,'Ford' ,'Renault' ,'Mahindra',
+ 'Tata', 'Chevrolet', 'Datsun', 'Jeep', 'Mercedes-Benz', 'Mitsubishi', 'Audi',
+ 'Volkswagen', 'BMW', 'Nissan', 'Lexus', 'Jaguar','Land' ,'MG' ,'Volvo', 'Daewoo',
+ 'Kia', 'Fiat', 'Force', 'Ambassador', 'Ashok', 'Isuzu' ,'Opel'],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],inplace=True)
 
         # Predict the car price
         car_price = model.predict(input_data)
