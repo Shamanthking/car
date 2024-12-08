@@ -458,7 +458,4 @@ if authenticate_user():
             show_team()
         elif menu == "Feedback":
             show_feedback_and_contact()
-    else:
-        st.error("Data could not be loaded. Please check the dataset.")
-readme with this link for git
-https://q8pptv2nhseudi6hdkzzc3.streamlit.app/?page=Predict
+    
