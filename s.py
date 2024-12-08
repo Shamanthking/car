@@ -16,6 +16,8 @@ from openpyxl import Workbook
 from sklearn.preprocessing import LabelEncoder
 import os
 import statsmodels.api as sm
+import base64
+
 
 
 
