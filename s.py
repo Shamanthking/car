@@ -204,42 +204,58 @@ def show_home(df):
 # ---- PREDICTION PAGE ----
 def show_prediction(df):
     st.header("Car Price Prediction")
-    df = load_data()
+
     if df is not None:
-        car_age = st.slider("Car Age", 0, 20, 10)
-        km_driven = st.number_input("Kilometers Driven", 0, 300000, 50000)
-        seats = st.selectbox("Seats", [2, 4, 5, 7])
-        max_power = st.number_input("Max Power (in bhp)", 50, 500, 100)
-        mileage = st.number_input("Mileage (kmpl)", 5.0, 35.0, 20.0)
-        engine_cc = st.number_input("Engine Capacity (CC)", 500, 5000, 1200)
-        brand = st.selectbox("Brand", df['brand'].unique())
-        fuel_type = st.selectbox("Fuel Type", ['Diesel', 'Petrol', 'LPG'])
-        seller_type = st.selectbox("Seller Type", ['Individual', 'Dealer', 'Trustmark Dealer'])
-        transmission = st.selectbox("Transmission", ['Manual', 'Automatic'])
-       
+        # User inputs
+        brand = st.selectbox("Select Car Brand", df['brand'].unique())
+        car_age = st.slider("Car Age (Years)", 0, 30, 5)
+        km_driven = st.slider("Kilometers Driven", 0, 300000, 50000)
+        fuel_type = st.selectbox("Fuel Type", df['fuel_type'].unique())
+        seller_type = st.selectbox("Seller Type", df['seller_type'].unique())
+        transmission = st.selectbox("Transmission", df['transmission'].unique())
+        mileage = st.slider("Mileage (km/l)", 5.0, 40.0, 20.0)
+        engine = st.slider("Engine Capacity (CC)", 500, 5000, 1200)
+        max_power = st.slider("Max Power (BHP)", 50, 500, 100)
+        seats = st.slider("Number of Seats", 2, 10, 5)
 
-        X = df.drop(columns=['selling_price'])
-        y = df['selling_price']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        user_data = pd.DataFrame({
+        # Create input DataFrame
+        input_data = pd.DataFrame({
+            'brand': [brand],
             'car_age': [car_age],
             'km_driven': [km_driven],
-            'seats': [seats],
-            'max_power': [max_power],
+            'fuel_type': [fuel_type],
+            'seller_type': [seller_type],
+            'transmission': [transmission],
             'mileage': [mileage],
-            'engine_cc': [engine_cc],
-           }) 
-# One-hot encoding for the categorical features
-        categorical_features = pd.DataFrame({'brand': [brand], 'fuel_type': [fuel_type], 'seller_type': [seller_type], 'transmission': [transmission]})
-        categorical_encoded = pd.get_dummies(categorical_features, drop_first=True)
-        user_data = pd.concat([user_data, categorical_encoded], axis=1)
-        user_data = user_data.reindex(columns=X.columns, fill_value=0)
+            'engine': [engine],
+            'max_power': [max_power],
+            'seats': [seats]
+        })
 
+        st.write("### User Input Data")
+        st.write(input_data)
+
+        # Encode categorical features
+        input_data['fuel_type'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
+        input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
+        input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
+        input_data['brand'].replace(df['brand'].unique(), range(1, len(df['brand'].unique()) + 1), inplace=True)
+
+        # Ensure column order matches the model's training data
+        X = df.drop(columns=['selling_price'])
+        input_data = input_data.reindex(columns=X.columns, fill_value=0)
+
+        # Train the model
+        y = df['selling_price']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
-        predicted_price = model.predict(user_data)
-        st.write(f"### Predicted Selling Price: ₹{predicted_price[0]:,.2f}")
+
+        # Predict the car price
+        if st.button("Predict"):
+            predicted_price = model.predict(input_data)
+            st.write(f"### Predicted Car Price: ₹{predicted_price[0]:,.2f}")
+
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
