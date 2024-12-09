@@ -203,15 +203,11 @@ def show_prediction(df):
     model_options = car_data.get(brand, [])
     selected_model = st.selectbox('Select Car Model', model_options)
 
-    Fuel = st.selectbox('Select Fuel Type', ['Diesel','Petrol','CNG','LPG','Other'])
-
-    Seller = st.selectbox('Select Type of Seller', ['Individual', 'Dealer','Trustmark Dealer','Other'])
-    
-    Transmission = st.selectbox('Select Car Transmission', ['Manual', 'Automatic','Other'])
-    
-    Owner = st.selectbox('Select Present Car Owner Type', ['First Owner','Second Owner','Third Owner','Fourth & Above Owner','Other'])
-
-    # Input fields for other variables without immediate validation
+    # Additional input fields
+    Fuel = st.selectbox('Select Fuel Type', ['Diesel', 'Petrol', 'CNG', 'LPG', 'Other'])
+    Seller = st.selectbox('Select Type of Seller', ['Individual', 'Dealer', 'Trustmark Dealer', 'Other'])
+    Transmission = st.selectbox('Select Car Transmission', ['Manual', 'Automatic', 'Other'])
+    Owner = st.selectbox('Select Present Car Owner Type', ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Other'])
     Year = st.text_input('Year')
     Km_driven = st.text_input('Km driven')
     engine = st.text_input('Engine')
@@ -219,7 +215,7 @@ def show_prediction(df):
     mileage_kmpl = st.text_input('Mileage (kmpl)')
 
     if st.button('Predict'):
-        # Function to validate numeric input during prediction
+        # Validate numeric input
         def validate_numeric_input(input_value, field_name):
             try:
                 return float(input_value)
@@ -227,14 +223,14 @@ def show_prediction(df):
                 st.error(f"Invalid input for {field_name}. Please enter a numeric value.")
                 return None
 
-        # Validate inputs on 'Predict' click
+        # Validation
         Year = validate_numeric_input(Year, 'Year')
         Km_driven = validate_numeric_input(Km_driven, 'Km driven')
         engine = validate_numeric_input(engine, 'Engine')
         max_power = validate_numeric_input(max_power, 'Max Power')
         mileage_kmpl = validate_numeric_input(mileage_kmpl, 'Mileage (kmpl)')
 
-        # Check if all inputs are valid before proceeding
+        # Proceed if all inputs are valid
         if None not in [Year, Km_driven, engine, max_power, mileage_kmpl]:
             try:
                 input_data = pd.DataFrame([{
@@ -251,13 +247,14 @@ def show_prediction(df):
                     'mileage_kmpl': mileage_kmpl
                 }])
 
-                # Predict the price using the pipeline model
+                # Predict the price
                 prediction = model.predict(input_data)
                 output = round(prediction[0] * 19.61, -3)
                 formatted_output = "{:,.0f}".format(output)
                 st.success(f'You can sell your car for {formatted_output} INR')
             except Exception as e:
                 st.error(f"An error occurred during prediction: {e}")
+
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
