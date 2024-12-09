@@ -165,7 +165,11 @@ def show_prediction(df):
     st.title("Car Price Prediction 🚗")
     
     # Load the pre-trained model
-    model = pk.load(open('sham.pkl', 'rb'))
+    try:
+        model = pk.load(open('sham.pkl', 'rb'))
+    except Exception as e:
+        st.error(f"Error loading the model: {e}")
+        return
 
     # Define car brands and their corresponding models
     car_data = {
@@ -194,14 +198,14 @@ def show_prediction(df):
         'Other': ['Other']
     }
 
-    # Brand selection
+   # Brand selection
     brand = st.selectbox('Select Car Brand', list(car_data.keys()))
 
     # Model selection based on the selected brand
     model_options = car_data.get(brand, [])
     selected_model = st.selectbox('Select Car Model', model_options)
 
-    # Additional input fields
+    # Additional input fields (same as in your original code)
     Fuel = st.selectbox('Select Fuel Type', ['Diesel', 'Petrol', 'CNG', 'LPG', 'Other'])
     Seller = st.selectbox('Select Type of Seller', ['Individual', 'Dealer', 'Trustmark Dealer', 'Other'])
     Transmission = st.selectbox('Select Car Transmission', ['Manual', 'Automatic', 'Other'])
@@ -221,14 +225,14 @@ def show_prediction(df):
                 st.error(f"Invalid input for {field_name}. Please enter a numeric value.")
                 return None
 
-        # Validation
+        # Validate all numeric inputs
         Year = validate_numeric_input(Year, 'Year')
         Km_driven = validate_numeric_input(Km_driven, 'Km driven')
         engine = validate_numeric_input(engine, 'Engine')
         max_power = validate_numeric_input(max_power, 'Max Power')
         mileage_kmpl = validate_numeric_input(mileage_kmpl, 'Mileage (kmpl)')
 
-        # Proceed if all inputs are valid
+        # Proceed only if all inputs are valid
         if None not in [Year, Km_driven, engine, max_power, mileage_kmpl]:
             try:
                 input_data = pd.DataFrame([{
@@ -245,9 +249,19 @@ def show_prediction(df):
                     'mileage_kmpl': mileage_kmpl
                 }])
 
+                # Ensure preprocessing is done (e.g., encoding categorical features, etc.)
+                # You can use LabelEncoder or one-hot encoding for categorical variables
+                le = LabelEncoder()
+                input_data['fuel'] = le.fit_transform(input_data['fuel'])
+                input_data['seller_type'] = le.fit_transform(input_data['seller_type'])
+                input_data['transmission'] = le.fit_transform(input_data['transmission'])
+                input_data['owner'] = le.fit_transform(input_data['owner'])
+                input_data['brand'] = le.fit_transform(input_data['brand'])
+                input_data['model'] = le.fit_transform(input_data['model'])
+
                 # Predict the price
                 prediction = model.predict(input_data)
-                output = round(prediction[0] * 19.61, -3)
+                output = round(prediction[0] * 19.61, -3)  # Assuming price is predicted in a different unit, so converting
                 formatted_output = "{:,.0f}".format(output)
                 st.success(f'You can sell your car for {formatted_output} INR')
             except Exception as e:
