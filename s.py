@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import pickle as pk
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
@@ -156,7 +155,6 @@ def show_home(df):
 def load_data():
     try:
         df = pd.read_csv('data/Processed_Cardetails.csv')
-        df['brand'] = df['name'].apply(get_brand_name)
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
