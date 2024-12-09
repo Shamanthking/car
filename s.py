@@ -364,12 +364,12 @@ def show_feedback_and_contact():
 
 # ---- NAVIGATION ----
 menu_options = {
-    "Home": show_home,
-    "Car Price Prediction": show_prediction,
-    "Data Analysis": show_analysis,
-    "Model Comparison": show_model_comparison,
-    "Team": show_team,
-    "Feedback & Contact": show_feedback_contact
+    "Home": show_home(),
+    "Car Price Prediction": show_prediction(),
+    "Data Analysis": show_analysis(),
+    "Model Comparison": show_model_comparison(),
+    "Team": show_team(),
+    "Feedback & Contact": show_feedback_and_contact()
 }
 
 selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
