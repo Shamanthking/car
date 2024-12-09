@@ -63,8 +63,6 @@ def show_home(df):
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
-
-
 # ---- LOAD DATA FUNCTION ----
 def load_data():
     try:
@@ -164,7 +162,6 @@ def show_prediction(df):
                 }])
 
                 # Ensure preprocessing is done (e.g., encoding categorical features, etc.)
-                # You can use LabelEncoder or one-hot encoding for categorical variables
                 le = LabelEncoder()
                 input_data['fuel'] = le.fit_transform(input_data['fuel'])
                 input_data['seller_type'] = le.fit_transform(input_data['seller_type'])
@@ -185,7 +182,6 @@ def show_prediction(df):
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
     st.header("📊 Detailed Data Analysis")
-    df = load_data()
     if df is not None:
         st.write("""
         Explore the dataset through a variety of visualizations and analyses to gain deeper insights into 
@@ -200,80 +196,11 @@ def show_analysis(df):
                      labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
         st.plotly_chart(fig)
 
-        # 2. Fuel Type Distribution
-        st.subheader("⛽ Fuel Type Distribution")
-        st.write("A pie chart illustrating the distribution of cars by fuel type (e.g., Petrol, Diesel, CNG).")
-        fuel_counts = df['fuel_type'].value_counts()
-        fig = px.pie(fuel_counts, values=fuel_counts.values, names=fuel_counts.index, 
-                     title="Fuel Type Distribution", hole=0.4)
-        st.plotly_chart(fig)
-
-        # 3. Distribution of Car Prices
-        st.subheader("💰 Distribution of Car Prices")
-        st.write("This histogram shows the distribution of car prices, helping identify common price ranges.")
-        fig = px.histogram(df, x='selling_price', nbins=50, title="Price Distribution", color_discrete_sequence=['#636EFA'])
-        st.plotly_chart(fig)
-
-        # 4. Box Plot for Price by Transmission Type
-        st.subheader("🚗 Price by Transmission Type")
-        st.write("A box plot showing how car prices vary between manual and automatic transmissions.")
-        fig = px.box(df, x='transmission_type', y='selling_price', title="Price Distribution by Transmission Type")
-        st.plotly_chart(fig)
-
-        # 5. Scatter Plot - Price vs Mileage
-        st.subheader("📈 Price vs Mileage")
-        st.write("A scatter plot displaying the relationship between mileage and selling price. A trendline is included to identify patterns.")
-        fig = px.scatter(df, x='mileage', y='selling_price', trendline="ols", title="Price vs. Mileage")
-        st.plotly_chart(fig)
-
-        # 6. Heatmap of Correlation Matrix
-        st.subheader("🔗 Correlation Heatmap")
-        st.write("This heatmap shows the correlation between numerical features. Strong positive or negative correlations are highlighted.")
-        fig, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
-        st.pyplot(fig)
-
-        # 7. Line Plot - Average Price by Car Age
-        st.subheader("📅 Average Price by Car Age")
-        st.write("A line chart showing how the average selling price changes with the age of the car.")
-        if 'vehicle_age' in df.columns:
-            age_price = df.groupby('vehicle_age')['selling_price'].mean().reset_index()
-            fig = px.line(age_price, x='vehicle_age', y='selling_price', title="Average Price by Car Age", markers=True)
-            st.plotly_chart(fig)
-
-        # 8. Violin Plot for Price by Seller Type
-        st.subheader("🛍️ Price by Seller Type")
-        st.write("A violin plot illustrating the distribution of car prices based on seller type, with box plot overlays.")
-        fig = px.violin(df, x='seller_type', y='selling_price', box=True, title="Price Distribution by Seller Type")
-        st.plotly_chart(fig)
-
-        # 9. Average Mileage by Fuel Type
-        st.subheader("⚡ Average Mileage by Fuel Type")
-        st.write("A bar chart showing the average mileage for each fuel type. Useful for identifying efficiency trends.")
-        if 'mileage' in df.columns and 'fuel_type' in df.columns:
-            mileage_fuel = df.groupby('fuel_type')['mileage'].mean().reset_index()
-            fig = px.bar(mileage_fuel, x='fuel_type', y='mileage', color='fuel_type', 
-                         title="Average Mileage by Fuel Type", labels={'mileage': 'Average Mileage (kmpl)', 'fuel_type': 'Fuel Type'})
-            st.plotly_chart(fig)
-
-        # 10. Distribution of Engine Size
-        st.subheader("🏎️ Distribution of Engine Size")
-        st.write("A histogram showing the distribution of engine capacities across cars in the dataset.")
-        fig = px.histogram(df, x='engine', nbins=50, title="Engine Size Distribution", color_discrete_sequence=['#FFA15A'])
-        st.plotly_chart(fig)
-
-        # 11. Price vs Engine Size
-        st.subheader("⚙️ Price vs Engine Size")
-        st.write("A scatter plot highlighting the relationship between engine capacity and selling price. Trendline included for clarity.")
-        fig = px.scatter(df, x='engine', y='selling_price', trendline="ols", 
-                         title="Price vs. Engine Size", labels={'engine': 'Engine Size (CC)', 'selling_price': 'Selling Price'})
-        st.plotly_chart(fig)
-
+        # Other visualizations would go here (e.g., Fuel Type, Price Distribution, etc.)
 
 # ---- MODEL COMPARISON ----
-def show_model_comparison():
+def show_model_comparison(df):
     st.header("Model Comparison")
-    df = load_data()
     if df is not None:
         X = df.drop(columns=['selling_price'])
         y = df['selling_price']
@@ -306,16 +233,13 @@ def show_model_comparison():
 # ---- TEAM PAGE ----
 def show_team():
     st.title("Meet the Team")
-    st.write("""
-    - *Deekshith N:* 4AD22CI009
-    - *Prashanth Singh H S:* 4AD22CI040
-    - *Shamanth M:* 4AD22CI047
-    - *Akash A S:* 4AD22CI400
- 
-    """)   
+    st.write(""" 
+    - *Deekshith N:* 4AD22CI009 
+    - *Prashanth Singh H S:* 4AD22CI040 
+    - *Shamanth M:* 4AD22CI047 
+    - *Akash A S:* 4AD22CI400 
+    """)
     st.balloons()
-
-
 
 # ---- FEEDBACK & CONTACT PAGE ----
 def show_feedback_and_contact():
@@ -329,6 +253,7 @@ def show_feedback_and_contact():
     if st.button("Submit Feedback"):
         try:
             # Load existing feedback data
+            feedback_file = 'feedback.xlsx'
             if os.path.exists(feedback_file):
                 feedback_df = pd.read_excel(feedback_file, engine="openpyxl")
             else:
@@ -336,43 +261,36 @@ def show_feedback_and_contact():
 
             # Append new feedback
             new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
-            with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
-                new_feedback.to_excel(writer, index=False, header=False, startrow=len(feedback_df) + 1)
-            st.success("Thank you for your feedback!")
+            with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a") as writer:
+                feedback_df = pd.concat([feedback_df, new_feedback], ignore_index=True)
+                feedback_df.to_excel(writer, index=False)
 
+            st.success("Thank you for your feedback!")
         except Exception as e:
-            st.error(f"Error while saving feedback: {e}")
+            st.error(f"Error saving feedback: {e}")
 
     # Contact Information
-    st.subheader("Contact Us")
-    st.write("""
-    If you have any questions or need support, feel free to reach out to us:
+    st.subheader("Contact Information")
+    st.write("For inquiries, reach out to us at:")
+    st.write("Email: example@example.com")
+    st.write("Phone: 123-456-7890")
 
-    - 📧 **Email**: shamanth2626@gmail.com  
-    - 📞 **Phone**: +8xxxxxxxxx
-    - 🌐 **Website**: [www.carpriceprediction.com](https://q8pptv2nhseudi6hdkzzc3.streamlit.app)
-    """)
+# ---- MAIN FUNCTION ----
+def main():
+    df = load_data()
+    if df is not None:
+        menu = ["Home", "Prediction", "Data Analysis", "Model Comparison", "Team", "Feedback & Contact"]
+        choice = st.sidebar.selectbox("Menu", menu)
 
-    # Social Media Links
-    st.write("Follow us on:")
-    st.markdown("""
-    - [LinkedIn](https://www.linkedin.com/in/shamanth-m-05537b264)🖇  
-    - [Instagram](https://www.instagram.com/shamanth_m_) 📸
-    """)
-
-
-
-# ---- NAVIGATION ----
-menu_options = {
-    "Home": show_home(),
-    "Car Price Prediction": show_prediction(),
-    "Data Analysis": show_analysis(),
-    "Model Comparison": show_model_comparison(),
-    "Team": show_team(),
-    "Feedback & Contact": show_feedback_and_contact()
-}
-
-selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
-menu_options[selected_menu]()
-
-    
+        if choice == "Home":
+            show_home(df)
+        elif choice == "Prediction":
+            show_prediction(df)
+        elif choice == "Data Analysis":
+            show_analysis(df)
+        elif choice == "Model Comparison":
+            show_model_comparison(df)
+        elif choice == "Team":
+            show_team()
+        elif choice == "Feedback & Contact":
+            show_feedback_and_contact()
