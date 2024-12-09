@@ -362,25 +362,17 @@ def show_feedback_and_contact():
 
 
 
-# ---- MAIN APP ----
-if "df" not in st.session_state:
-    st.session_state.df = load_data()
+# ---- NAVIGATION ----
+menu_options = {
+    "Home": show_home,
+    "Car Price Prediction": show_prediction,
+    "Data Analysis": show_analysis,
+    "Model Comparison": show_model_comparison,
+    "Team": show_team,
+    "Feedback & Contact": show_feedback_contact
+}
 
+selected_menu = st.sidebar.selectbox("Main Menu", list(menu_options.keys()))
+menu_options[selected_menu]()
 
-    st.sidebar.title("Menu")
-    menu = st.sidebar.radio("Select a page:", ["Home", "Prediction", "Model Comparission", "Analysis", "Team", "Feedback"])
-
-    if st.session_state.df is not None:
-        if menu == "Home":
-            show_home(st.session_state.df)
-        elif menu == "Prediction":
-            show_prediction(st.session_state.df)
-        elif menu == "Analysis":
-            show_analysis(st.session_state.df)
-        elif menu == "Model Comparission":
-            show_model_comparison()
-        elif menu == "Team":
-            show_team()
-        elif menu == "Feedback":
-            show_feedback_and_contact()
     
