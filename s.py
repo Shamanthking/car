@@ -167,40 +167,97 @@ def show_prediction(df):
     st.title("Car Price Prediction 🚗")
     
     # Load the pre-trained model
-    model = pk.load(open('ProcessedCar.pkl', 'rb'))
+    model = pk.load(open('sham.pkl', 'rb'))
 
-    # ---- USER INPUT FORM ----
-    name = st.selectbox("Select Car Brand", df['brand'].unique())
-    year = st.slider("Select Manufacture Year", 1994, 2024)
-    km_driven = st.slider("Kilometers Driven", 11, 200000)
-    fuel = st.selectbox("Fuel Type", df['fuel'].unique())
-    seller_type = st.selectbox("Type of Seller", df['seller_type'].unique())
-    mileage = st.slider("Car Mileage (km/l)", 10, 40)
-    owner = st.selectbox("Type of Owner", df['owner'].unique())
-    engine = st.slider("Engine Capacity (CC)", 700, 5000)
-    max_power = st.slider("Max Power (BHP)", 0, 200)
-    transmission = st.selectbox("Type of Transmission", df['transmission'].unique())
-    seats = st.slider("Number of Seats", 2, 10)
+    # Define car brands and their corresponding models
+    car_data = {
+        'Ambassador': ['Grand', 'Classic'],
+        'Chevrolet': ['Spark', 'Aveo', 'Sail', 'Cruze', 'Optra', 'Beat'],
+        'Daewoo': ['Matiz'],
+        'Datsun': ['GO', 'RediGO'],
+        'Fiat': ['Linea', 'Grande Punto', 'Punto', 'Avventura'],
+        'Ford': ['Freestyle', 'Fusion', 'EcoSport', 'Ikon', 'Aspire', 'Classic', 'Figo', 'Fiesta'],
+        'Honda': ['Civic', 'Amaze', 'City', 'Jazz', 'WR-V', 'Brio'],
+        'Hyundai': ['i20', 'i10', 'Elantra', 'Getz', 'Venue', 'EON', 'Accent', 'Verna', 'Grand i10', 'Xcent', 'Creta', 'Sonata', 'Santro', 'Elite'],
+        'Kia': ['Seltos'],
+        'Mahindra': ['Logan', 'KUV 100', 'XUV300', 'Verito'],
+        'Mahindra Renault': ['Logan'],
+        'Maruti': ['A-Star', 'Omni', 'Eeco', '800', 'Ciaz', 'S-Presso', 'Baleno', 'Alto', 'Esteem', 'S-Cross', 'Wagon R', 'Ignis', 'Zen', 'Vitara Brezza', 'Swift', 'SX4', 'Celerio', 'Ritz', 'Dzire'],
+        'Mercedes-Benz': ['B Class'],
+        'Mitsubishi': ['Lancer'],
+        'Nissan': ['Micra', 'Kicks', 'Sunny', 'Terrano'],
+        'Opel': ['Astra'],
+        'Renault': ['KWID', 'Fluence', 'Koleos', 'Duster', 'Pulse', 'Captur', 'Scala'],
+        'Skoda': ['Laura', 'Octavia', 'Rapid', 'Superb', 'Fabia'],
+        'Tata': ['Bolt', 'Tiago', 'Nexon', 'Zest', 'Tigor', 'Manza', 'Indigo', 'Indica'],
+        'Toyota': ['Glanza', 'Platinum Etios', 'Yaris', 'Etios', 'Corolla'],
+        'Volkswagen': ['Jetta', 'Ameo', 'CrossPolo', 'Passat', 'Polo', 'Vento'],
+        'Volvo': ['V40'],
+        'Other': ['Other']
+    }
 
-    if st.button("Predict"):
-        # Prepare input data
-        input_data = pd.DataFrame([[name, year, km_driven, fuel, seller_type, transmission, owner, mileage, engine, max_power, seats]], 
-                                  columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'mileage', 'engine', 'max_power', 'seats'])
+    # Brand selection
+    brand = st.selectbox('Select Car Brand', list(car_data.keys()))
 
-        # Preprocessing the input data (encoding categorical features)
-        input_data['owner'].replace(['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'], [1, 2, 3, 4, 5], inplace=True)
-        input_data['fuel'].replace(['Diesel', 'Petrol', 'LPG', 'CNG'], [1, 2, 3, 4], inplace=True)
-        input_data['seller_type'].replace(['Individual', 'Dealer', 'Trustmark Dealer'], [1, 2, 3], inplace=True)
-        input_data['transmission'].replace(['Manual', 'Automatic'], [1, 2], inplace=True)
-        input_data['name'].replace(['Maruti', 'Skoda', 'Honda', 'Hyundai', 'Toyota', 'Ford', 'Renault', 'Mahindra', 'Tata', 'Chevrolet', 
-                                    'Datsun', 'Jeep', 'Mercedes-Benz', 'Mitsubishi', 'Audi', 'Volkswagen', 'BMW', 'Nissan', 'Lexus', 'Jaguar',
-                                    'Land', 'MG', 'Volvo', 'Daewoo', 'Kia', 'Fiat', 'Force', 'Ambassador', 'Ashok', 'Isuzu', 'Opel'], 
-                                   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], inplace=True)
+    # Model selection based on the selected brand
+    model_options = car_data.get(brand, [])
+    selected_model = st.selectbox('Select Car Model', model_options)
 
-        # Predict the car price
-        car_price = model.predict(input_data)
+    Fuel = st.selectbox('Select Fuel Type', ['Diesel','Petrol','CNG','LPG','Other'])
 
-        st.write(f"### Predicted Car Price: ₹{int(car_price[0]):,} INR")
+    Seller = st.selectbox('Select Type of Seller', ['Individual', 'Dealer','Trustmark Dealer','Other'])
+    
+    Transmission = st.selectbox('Select Car Transmission', ['Manual', 'Automatic','Other'])
+    
+    Owner = st.selectbox('Select Present Car Owner Type', ['First Owner','Second Owner','Third Owner','Fourth & Above Owner','Other'])
+
+    # Input fields for other variables without immediate validation
+    Year = st.text_input('Year')
+    Km_driven = st.text_input('Km driven')
+    engine = st.text_input('Engine')
+    max_power = st.text_input('Max Power')
+    mileage_kmpl = st.text_input('Mileage (kmpl)')
+
+    if st.button('Predict'):
+        # Function to validate numeric input during prediction
+        def validate_numeric_input(input_value, field_name):
+            try:
+                return float(input_value)
+            except ValueError:
+                st.error(f"Invalid input for {field_name}. Please enter a numeric value.")
+                return None
+
+        # Validate inputs on 'Predict' click
+        Year = validate_numeric_input(Year, 'Year')
+        Km_driven = validate_numeric_input(Km_driven, 'Km driven')
+        engine = validate_numeric_input(engine, 'Engine')
+        max_power = validate_numeric_input(max_power, 'Max Power')
+        mileage_kmpl = validate_numeric_input(mileage_kmpl, 'Mileage (kmpl)')
+
+        # Check if all inputs are valid before proceeding
+        if None not in [Year, Km_driven, engine, max_power, mileage_kmpl]:
+            try:
+                input_data = pd.DataFrame([{
+                    'year': Year,
+                    'km_driven': Km_driven,
+                    'fuel': Fuel,
+                    'seller_type': Seller,
+                    'transmission': Transmission,
+                    'owner': Owner,
+                    'engine': engine,
+                    'max_power': max_power,
+                    'brand': brand,
+                    'model': selected_model,
+                    'mileage_kmpl': mileage_kmpl
+                }])
+
+                # Predict the price using the pipeline model
+                prediction = model.predict(input_data)
+                output = round(prediction[0] * 19.61, -3)
+                formatted_output = "{:,.0f}".format(output)
+                st.success(f'You can sell your car for {formatted_output} INR')
+            except Exception as e:
+                st.error(f"An error occurred during prediction: {e}")
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
