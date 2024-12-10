@@ -8,14 +8,20 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.impute import SimpleImputer
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
-from openpyxl import Workbook
 from sklearn.preprocessing import LabelEncoder
+from openpyxl import Workbook
 import os
-import statsmodels.api as sm
+
+# ---- Load Data ----
+def load_data():
+    try:
+        df = pd.read_csv("c1.csv")
+        df1 = pd.read_csv("c2.csv")
+        return df, df1
+    except FileNotFoundError as e:
+        st.error(f"Error loading data: {e}")
+        return None, None
 
 # ---- HOME PAGE ----
 def show_home(df):
@@ -37,98 +43,47 @@ def show_home(df):
 
     st.write("""
     This application leverages the power of **machine learning** to analyze car features, uncover insights, 
-    and predict car prices with ease. Whether you're a car dealer, buyer, or data enthusiast, this tool 
-    is designed to provide you with actionable insights and accurate predictions.
+    and predict car prices with ease.
     """)
-    st.subheader("📖 How to Use This App:")
-    st.markdown("""
-    1. **Explore and Analyze Data**  
-       - Dive into the dataset with **interactive visualizations** and **metrics**:
-       - Understand trends in car features like mileage, engine size, and brand popularity.
-       - Identify key factors that influence car prices.
-    
-    2. **Predict Selling Prices**  
-       - Provide the required details such as car age, mileage, and engine specifications.  
-       - Instantly predict the expected selling price using powerful machine learning models.
-    
-    3. **Compare Machine Learning Models**  
-       - Evaluate multiple models, including Random Forest, Gradient Boosting, and Linear Regression, 
-         to see which performs best on your data.
-    
-    4. **Leave Feedback**  
-       - Share your experience with the app to help us improve!
-    """)
-
-    # Display initial insights
     st.subheader("Dataset Overview")
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
-df=pd.read_csv(r"c1.csv")
-df1=pd.read_csv(r"c2.csv")
-st.set_page_config(
-    page_title='CarDheko price pridection',
-    layout='wide'
-)
-
 # ---- PREDICTION PAGE FUNCTION ----
-def show_prediction(df):
+def show_prediction(df, df1, choice):
     st.title("Car Price Prediction 🚗")
-    
-    # Ensure that you check the choice in the sidebar
+
     if choice == 'Create the Model':
         col1, col2 = st.columns(2)
-        
         with col1:
             Fuel_type = st.selectbox('Select the fuel type', df['fuel_type'].unique())
             df_1 = df[df['fuel_type'] == Fuel_type]
-            body_type = st.selectbox('Select the body type', df['body_type'].unique())
+            body_type = st.selectbox('Select the body type', df_1['body_type'].unique())
             df_1 = df_1[df_1['body_type'] == body_type]
-            owner_type = st.selectbox('Select the owner type', df['owner_type'].unique())
+            owner_type = st.selectbox('Select the owner type', df_1['owner_type'].unique())
             df_1 = df_1[df_1['owner_type'] == owner_type]
-            transmission_type = st.selectbox('Select the transmission type', df['transmission_type'].unique())
+            transmission_type = st.selectbox('Select the transmission type', df_1['transmission_type'].unique())
             df_1 = df_1[df_1['transmission_type'] == transmission_type]
-            manufacture_year = st.selectbox('Select the manufacture year', df['manufacture'].unique())
-            df_1 = df_1[df_1['manufacture'] == manufacture_year]
-            kilometer = st.selectbox('Select the kilometer in log', df1['kilometers_log'].unique())
-            df_1 = df1[df1['kilometers_log'] == kilometer]
-        
         with col2:
-            seat = st.selectbox('Select the seat type', df['seat'].unique())
-            df_1 = df_1[df_1['seat'] == seat]
-            car_model = st.selectbox('Select the number of owner', df['oem'].unique())
-            df_1 = df_1[df_1['oem'] == car_model]
-            Mileage = st.selectbox('Select the Mileage', df['mileage'].unique())
-            df_2 = df[df['mileage'] == Mileage]
-            Engine_Capacity = st.selectbox('Select the Engine Capacity', df['engine_capacity'].unique())
-            df1 = df[df['engine_capacity'] == Engine_Capacity]
-            city = st.selectbox('Select the city', df['city'].unique())
-            df_2 = df_2[df_2['city'] == city]
-    
-    # If prediction is to be made, we select input data and output data
-    if choice == 'Prediction':
+            manufacture_year = st.selectbox('Select the manufacture year', df_1['manufacture'].unique())
+            df_1 = df_1[df_1['manufacture'] == manufacture_year]
+            kilometer = st.selectbox('Select the kilometer log', df1['kilometers_log'].unique())
+            df_1 = df1[df1['kilometers_log'] == kilometer]
+
+    elif choice == 'Prediction':
         input_data = df.drop(columns=['price'])
         output_data = df['price']
-
+        st.write("Prediction functionality will be added here.")
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
     st.header("📊 Detailed Data Analysis")
     if df is not None:
-        st.write("""
-        Explore the dataset through a variety of visualizations and analyses to gain deeper insights into 
-        the factors affecting car prices. Each visualization is explained for better interpretation.
-        """)
-
-        # 1. Brand Distribution
-        st.subheader("🔍 Brand Distribution")
-        st.write("This bar chart shows the count of cars available for each brand in the dataset.")
+        st.subheader("Brand Distribution")
         brand_counts = df['brand'].value_counts()
         fig = px.bar(brand_counts, x=brand_counts.index, y=brand_counts.values, 
                      labels={'x': 'Brand', 'y': 'Count'}, title="Brand Distribution")
         st.plotly_chart(fig)
-
-        # Other visualizations would go here (e.g., Fuel Type, Price Distribution, etc.)
 
 # ---- MODEL COMPARISON ----
 def show_model_comparison(df):
@@ -165,64 +120,39 @@ def show_model_comparison(df):
 # ---- TEAM PAGE ----
 def show_team():
     st.title("Meet the Team")
-    st.write(""" 
-    - *Deekshith N:* 4AD22CI009 
-    - *Prashanth Singh H S:* 4AD22CI040 
-    - *Shamanth M:* 4AD22CI047 
-    - *Akash A S:* 4AD22CI400 
-    """)
-    st.balloons()
+    st.write("Team Member Information")
 
-# ---- FEEDBACK & CONTACT PAGE ----
+# ---- FEEDBACK PAGE ----
 def show_feedback_and_contact():
     st.title("Feedback & Contact")
-
-    # Feedback Form
-    st.subheader("We'd love to hear your feedback!")
     rating = st.selectbox("Rate Us:", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], index=4)
     feedback = st.text_area("Share your suggestions or comments:")
 
     if st.button("Submit Feedback"):
+        feedback_file = 'feedback.xlsx'
         try:
-            # Load existing feedback data
-            feedback_file = 'feedback.xlsx'
             if os.path.exists(feedback_file):
                 feedback_df = pd.read_excel(feedback_file, engine="openpyxl")
             else:
-                feedback_df = pd.DataFrame(columns=["rating", "comments"])
-
-            # Append new feedback
-            new_feedback = pd.DataFrame([[rating, feedback]], columns=["rating", "comments"])
-            with pd.ExcelWriter(feedback_file, engine="openpyxl", mode="a") as writer:
-                feedback_df = pd.concat([feedback_df, new_feedback], ignore_index=True)
-                feedback_df.to_excel(writer, index=False)
-
+                feedback_df = pd.DataFrame(columns=["Rating", "Comments"])
+            new_feedback = pd.DataFrame([[rating, feedback]], columns=["Rating", "Comments"])
+            feedback_df = pd.concat([feedback_df, new_feedback], ignore_index=True)
+            feedback_df.to_excel(feedback_file, index=False, engine="openpyxl")
             st.success("Thank you for your feedback!")
         except Exception as e:
-            st.error(f"Error saving feedback: {e}")
-
-    # Contact Information
-    st.subheader("Contact Information")
-    st.write("For inquiries, reach out to us at:")
-    st.write("Email: example@example.com")
-    st.write("Phone: 123-456-7890")
+            st.error(f"Error: {e}")
 
 # ---- MAIN FUNCTION ----
 def main():
-    # Load the dataset
-    df = load_data()
+    df, df1 = load_data()
     if df is not None:
-        # Sidebar menu for navigation
         menu = ["Home", "Create the Model", "Prediction", "Data Analysis", "Model Comparison", "Team", "Feedback & Contact"]
         choice = st.sidebar.selectbox("Menu", menu)
 
-        # Navigate to the respective page based on user choice
         if choice == "Home":
             show_home(df)
-        elif choice == "Create the Model":
-            show_prediction(df)  # Call show_prediction when "Create the Model" is selected
-        elif choice == "Prediction":
-            show_prediction(df)  # Call show_prediction for "Prediction" functionality
+        elif choice in ["Create the Model", "Prediction"]:
+            show_prediction(df, df1, choice)
         elif choice == "Data Analysis":
             show_analysis(df)
         elif choice == "Model Comparison":
@@ -232,3 +162,6 @@ def main():
         elif choice == "Feedback & Contact":
             show_feedback_and_contact()
 
+if __name__ == "__main__":
+    st.set_page_config(page_title='CarDekho Price Prediction', layout='wide')
+    main()
