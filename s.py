@@ -74,7 +74,7 @@ st.set_page_config(
 # ---- PREDICTION PAGE FUNCTION ----
 def show_prediction(df):
     st.title("Car Price Prediction 🚗")
-    if select=='Create the Model':
+    
         col1,col2=st.columns(2)
         
         with col1:
