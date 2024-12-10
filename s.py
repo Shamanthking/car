@@ -13,8 +13,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
-df=pd.read_csv(r"c1")
-df1=pd.read_csv(r"c2")
+try:
+    df = pd.read_csv(r"c1.csv")
+    df1 = pd.read_csv(r"c2.csv")
+except FileNotFoundError as e:
+    st.error(f"File not found: {e}")
+
 st.set_page_config(
     page_title='CarDheko price pridection',
     layout='wide'
