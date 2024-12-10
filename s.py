@@ -5,6 +5,7 @@ import pickle as pk
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.impute import SimpleImputer
@@ -104,10 +105,6 @@ def show_prediction(df):
 if select=='prediction':
     input_data=df.drop(columns=['price'])
     output_data=df['price']
-
-    
-
-    
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
