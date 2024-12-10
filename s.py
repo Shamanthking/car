@@ -72,39 +72,65 @@ st.set_page_config(
 )
 
 # ---- PREDICTION PAGE FUNCTION ----
+# ---- PREDICTION PAGE FUNCTION ----
 def show_prediction(df):
     st.title("Car Price Prediction 🚗")
     
-        col1,col2=st.columns(2)
-        
-        with col1:
-            Fuel_type=st.selectbox('Select the fuel type',df['fuel_type'].unique())
-            df_1=df[df['fuel_type']==Fuel_type]
-            body_type=st.selectbox('Select the body type',df['body_type'].unique())
-            df_1=df[df['body_type']==body_type]
-            owner_type=st.selectbox('Select the owner type',df['owner_type'].unique())
-            df_1=df[df['owner_type']==owner_type]
-            transmission_type=st.selectbox('Select the transmission type',df['transmission_type'].unique())
-            df_1=df[df['body_type']==transmission_type]
-            manufacture_year=st.selectbox('Select the manufacture year',df['manufacture'].unique())
-            df_1=df[df['manufacture']==manufacture_year]
-            kilometer=st.selectbox('Select the kilometer in log',df1['kilometers_log'].unique())
-            df_1=df1[df1['kilometers_log']==kilometer]
-        with col2:
-              seat=st.selectbox('Select the seat type',df['seat'].unique())
-              df_1=df[df['seat']==seat]
-              car_model=st.selectbox('Select the number of owner',df['oem'].unique())
-              df_1=df[df['oem']==car_model]
-              Mileage=st.selectbox('Select the Mileage',df['mileage'].unique())
-              df_2=df[df['mileage']==Mileage]
-              Engine_Capacity=st.selectbox('Select the Engine Capacity',df['engine_capacity'].unique())
-              df1=df[df['engine_capacity']==Engine_Capacity]
-              city=st.selectbox('Select the city',df['city'].unique())
-              df_2=df[df['city']==city]
+    # Updated to handle 'Create the Model' or 'prediction' based on selection
+    select = st.radio("Choose an Option:", ["Create the Model", "Prediction"])
 
-if select=='prediction':
-    input_data=df.drop(columns=['price'])
-    output_data=df['price']
+    if select == 'Create the Model':
+        col1, col2 = st.columns(2)
+
+        with col1:
+            Fuel_type = st.selectbox('Select the fuel type', df['fuel_type'].unique())
+            df_1 = df[df['fuel_type'] == Fuel_type]
+
+            body_type = st.selectbox('Select the body type', df['body_type'].unique())
+            df_1 = df_1[df_1['body_type'] == body_type]
+
+            owner_type = st.selectbox('Select the owner type', df['owner_type'].unique())
+            df_1 = df_1[df_1['owner_type'] == owner_type]
+
+            transmission_type = st.selectbox('Select the transmission type', df['transmission_type'].unique())
+            df_1 = df_1[df_1['transmission_type'] == transmission_type]
+
+            manufacture_year = st.selectbox('Select the manufacture year', df['manufacture'].unique())
+            df_1 = df_1[df_1['manufacture'] == manufacture_year]
+
+            kilometer = st.selectbox('Select the kilometer in log', df1['kilometers_log'].unique())
+            df_1 = df_1[df1['kilometers_log'] == kilometer]
+
+        with col2:
+            seat = st.selectbox('Select the seat type', df['seat'].unique())
+            df_1 = df_1[df_1['seat'] == seat]
+
+            car_model = st.selectbox('Select the car model', df['oem'].unique())
+            df_1 = df_1[df_1['oem'] == car_model]
+
+            Mileage = st.selectbox('Select the Mileage', df['mileage'].unique())
+            df_1 = df_1[df_1['mileage'] == Mileage]
+
+            Engine_Capacity = st.selectbox('Select the Engine Capacity', df['engine_capacity'].unique())
+            df_1 = df_1[df_1['engine_capacity'] == Engine_Capacity]
+
+            city = st.selectbox('Select the city', df['city'].unique())
+            df_1 = df_1[df_1['city'] == city]
+
+        # Display filtered dataset after selections
+        st.subheader("Filtered Dataset")
+        st.write(df_1)
+
+    elif select == 'Prediction':
+        st.subheader("Prediction Inputs")
+        
+        # Drop the target column for prediction inputs
+        input_data = df.drop(columns=['price'])
+        output_data = df['price']
+        
+        st.write("Prepare your prediction inputs from the data:")
+        st.write(input_data.head())
+        # Add more prediction-related logic here as needed
 
 # ---- DATA ANALYSIS ----
 def show_analysis(df):
