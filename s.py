@@ -209,15 +209,20 @@ def show_feedback_and_contact():
 
 # ---- MAIN FUNCTION ----
 def main():
+    # Load the dataset
     df = load_data()
     if df is not None:
-        menu = ["Home", "Prediction", "Data Analysis", "Model Comparison", "Team", "Feedback & Contact"]
+        # Sidebar menu for navigation
+        menu = ["Home", "Create the Model", "Prediction", "Data Analysis", "Model Comparison", "Team", "Feedback & Contact"]
         choice = st.sidebar.selectbox("Menu", menu)
 
+        # Navigate to the respective page based on user choice
         if choice == "Home":
             show_home(df)
+        elif choice == "Create the Model":
+            show_prediction(df)  # Call show_prediction when "Create the Model" is selected
         elif choice == "Prediction":
-            show_prediction(df)
+            show_prediction(df)  # Call show_prediction for "Prediction" functionality
         elif choice == "Data Analysis":
             show_analysis(df)
         elif choice == "Model Comparison":
@@ -226,3 +231,4 @@ def main():
             show_team()
         elif choice == "Feedback & Contact":
             show_feedback_and_contact()
+
