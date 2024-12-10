@@ -63,20 +63,12 @@ def show_home(df):
     st.write(df.head())
     st.write(f"Number of records: {df.shape[0]} | Number of features: {df.shape[1]}")
 
-# ---- LOAD DATA FUNCTION ----
-def load_data():
-    try:
-        df = pd.read_csv('c1.csv')
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return None
-# Load the pre-trained model
-    try:
-        model = pk.load_csv('c2.csv')
-    except Exception as e:
-        st.error(f"Error loading the model: {e}")
-        return
+df=pd.read_csv(r"c1.csv")
+df1=pd.read_csv(r"c2.csv")
+st.set_page_config(
+    page_title='CarDheko price pridection',
+    layout='wide'
+)
 
 # ---- PREDICTION PAGE FUNCTION ----
 def show_prediction(df):
